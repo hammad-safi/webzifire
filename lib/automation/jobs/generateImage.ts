@@ -17,7 +17,7 @@ export async function runGenerateAndStoreFeaturedImage(params: {
   const prompt =
     params.imagePrompt && params.imagePrompt.trim().length > 20
       ? params.imagePrompt
-      : `Abstract minimalist enterprise software architecture visualization representing "${params.title}", sleek obsidian glass geometry illuminated by soft crimson light trails and subtle warm bronze highlights, cinematic studio lighting, ultra sharp 16:9 editorial cover`;
+      : `Professional modern technology editorial photography illustrating "${params.title}", sleek clean modern workspace with software screens in natural bright daylight, authentic professional atmosphere, sharp focus, 8k resolution, 16:9 widescreen, no text`;
 
   const { buffer, mimeType, modelUsed } = await callGeminiImageGen({
     prompt,

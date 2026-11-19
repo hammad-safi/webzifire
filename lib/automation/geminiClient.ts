@@ -374,7 +374,7 @@ export async function callGeminiImageGen(params: {
           role: "user",
           parts: [
             {
-              text: `${params.prompt}\n\nVisual requirements: Widescreen 16:9 editorial hero composition, dark obsidian charcoal background (#0B0607) with subtle warm crimson (#D6334A) and champagne gold accents, ultra-clean architectural/technology aesthetic, NO embedded text, NO watermarks, NO logos, photorealistic lighting.`,
+              text: `${params.prompt}\n\nVisual requirements: Widescreen 16:9 high-definition editorial tech photography, natural bright daylight and clean modern lighting, realistic colors, NO heavy red casts or crimson filters, sharp focus, professional authentic setting, NO embedded text, NO watermarks, NO logos.`,
             },
           ],
         },
@@ -442,8 +442,9 @@ export async function callGeminiImageGen(params: {
 
   // Resilient Fallback 1: Fast, photorealistic AI image generation via Pollinations
   try {
+    const cleanPrompt = params.prompt.replace(/crimson|obsidian|red light|red accents|red glow/gi, "").trim();
     const aiPrompt = encodeURIComponent(
-      `${params.prompt}, dark obsidian charcoal theme, subtle crimson red accents, sleek minimalist enterprise software tech aesthetic, 8k, cinematic 16:9`
+      `${cleanPrompt}, modern professional technology, bright natural daylight, clean sleek workspace, authentic editorial photography, 8k resolution, sharp focus, cinematic 16:9, no text`
     );
     const pollUrl = `https://image.pollinations.ai/prompt/${aiPrompt}?width=1200&height=675&nologo=true`;
     const pollRes = await fetch(pollUrl, { signal: AbortSignal.timeout(12000) });

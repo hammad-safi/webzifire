@@ -203,7 +203,7 @@ Return ONLY valid JSON with this exact schema:
   "takeaway": "2-3 sentence architectural takeaway paragraph",
   "ctaHeading": "Short relevant call-to-action heading",
   "ctaDescription": "1-sentence invitation to scope this solution with WebziFire",
-  "imagePrompt": "Editorial 3D architectural visualization prompt describing abstract technology metaphor for this topic, dark obsidian background with subtle crimson and warm champagne lighting, NO text or letters",
+  "imagePrompt": "Highly relevant, photorealistic editorial tech photograph describing a specific real-world scene directly illustrating this article topic (e.g. modern bright office, team collaborating, dashboard on sleek screen, state-of-the-art tech workspace), natural daylight, professional lighting, realistic modern colors (NO heavy red tints, NO dark crimson cast), sharp focus, 8k, 16:9 widescreen, NO text or letters",
   "imageAlt": "Descriptive SEO alt text for the featured image (45-120 chars)"
 }
 `;
