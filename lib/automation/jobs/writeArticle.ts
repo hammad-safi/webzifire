@@ -172,7 +172,7 @@ Requirements:
 - Include at least 5 H2 headings, helpful H3 subheadings, at least 2 concrete real-world examples (block type "example"), bulleted technical takeaways (block type "list"), and 4–5 insightful FAQs answering real buyer questions.
 - Include 3–5 relevant internal links pointing ONLY to exact URLs from the Valid Internal Routes list above (including at least 1 relevant /services/... page and /book or /contact).
 - Write a compelling custom Architectural Takeaway and WebziFire CTA aligned with the article topic.
-- Write a vivid, no-text art-direction prompt for the 16:9 dark obsidian-crimson featured image plus a concise, descriptive SEO imageAlt (40–120 chars).
+- Write a vivid, no-text art-direction prompt for a modern, high-definition 16:9 editorial tech photograph (natural daylight, authentic modern workspace, clean monitors and architecture, realistic colors, sharp focus, 8K, no text, no logo) plus a concise, descriptive SEO imageAlt (40–120 chars).
 `;
   } else {
     throw new Error("Either topic or existingArticle is required to write/revise an article.");

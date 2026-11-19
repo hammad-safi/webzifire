@@ -22,6 +22,7 @@ class PostgrestQueryBuilder implements PromiseLike<SupabaseResult<any>> {
   private filters: FilterOp[] = [];
   private orders: string[] = [];
   private limitNum: number | null = null;
+  private offsetNum: number | null = null;
   private bodyPayload: unknown = null;
   private preferHeaders: string[] = [];
   private onConflictCol: string | null = null;
@@ -70,6 +71,27 @@ class PostgrestQueryBuilder implements PromiseLike<SupabaseResult<any>> {
   update(values: Record<string, unknown>): this {
     this.method = "PATCH";
     this.bodyPayload = values;
+    return this;
+  }
+
+  delete(): this {
+    this.method = "DELETE";
+    return this;
+  }
+
+  or(filters: string): this {
+    this.filters.push({ col: "or", op: "", val: `(${filters})` });
+    return this;
+  }
+
+  ilike(col: string, val: string): this {
+    this.filters.push({ col, op: "ilike", val });
+    return this;
+  }
+
+  range(from: number, to: number): this {
+    this.offsetNum = from;
+    this.limitNum = to - from + 1;
     return this;
   }
 
@@ -124,10 +146,17 @@ class PostgrestQueryBuilder implements PromiseLike<SupabaseResult<any>> {
         url.searchParams.set("on_conflict", this.onConflictCol);
       }
       for (const f of this.filters) {
-        url.searchParams.append(f.col, `${f.op}.${f.val}`);
+        if (!f.op) {
+          url.searchParams.append(f.col, f.val);
+        } else {
+          url.searchParams.append(f.col, `${f.op}.${f.val}`);
+        }
       }
       if (this.orders.length > 0) {
         url.searchParams.set("order", this.orders.join(","));
+      }
+      if (this.offsetNum !== null) {
+        url.searchParams.set("offset", String(this.offsetNum));
       }
       if (this.limitNum !== null) {
         url.searchParams.set("limit", String(this.limitNum));

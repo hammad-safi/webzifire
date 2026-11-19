@@ -38,7 +38,7 @@ export async function runGenerateAndStoreFeaturedImage(params: {
   if (!bucket) {
     await admin.storage.createBucket("journal-images", {
       public: true,
-      fileSizeLimit: 5 * 1024 * 1024,
+      fileSizeLimit: 10 * 1024 * 1024,
       allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"],
     });
   }

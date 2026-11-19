@@ -53,7 +53,7 @@ export async function GET() {
       admin
         .from("journal_articles")
         .select(
-          "id, slug, title, category, service_pillar, status, word_count, quality_score, revision_count, image_url, primary_keyword, approval_token, approval_email_sent_at, published_at, rejected_at, created_at"
+          "id, slug, title, category, service_pillar, status, word_count, quality_score, revision_count, image_url, image_alt, image_prompt, summary, takeaway, author, author_role, read_time, primary_keyword, approval_token, approval_email_sent_at, published_at, rejected_at, created_at"
         )
         .order("created_at", { ascending: false })
         .limit(50),
@@ -217,6 +217,34 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    // Update journal_article if articleId / id is provided
+    const targetArticleId = body?.articleId || (body?.id && body.id !== "default" ? body.id : null);
+    if (targetArticleId) {
+      const allowedFields: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (typeof body.title === "string") allowedFields.title = body.title.trim();
+      if (typeof body.slug === "string") allowedFields.slug = body.slug.trim().toLowerCase();
+      if (typeof body.category === "string") allowedFields.category = body.category.trim();
+      if (typeof body.service_pillar === "string") allowedFields.service_pillar = body.service_pillar.trim();
+      if (typeof body.summary === "string") allowedFields.summary = body.summary.trim();
+      if (typeof body.takeaway === "string") allowedFields.takeaway = body.takeaway.trim();
+      if (typeof body.image_url === "string") allowedFields.image_url = body.image_url.trim();
+      if (typeof body.status === "string") allowedFields.status = body.status;
+
+      const { data, error } = await admin
+        .from("journal_articles")
+        .update(allowedFields)
+        .eq("id", targetArticleId)
+        .select()
+        .single();
+
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, article: data });
+    }
+
     // Update automation_settings
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -270,6 +298,44 @@ export async function PATCH(request: Request) {
         success: false,
         error: err instanceof Error ? err.message : "Failed updating settings.",
       },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  const authed = await isAuthenticatedAdmin();
+  if (!authed) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get("id") || searchParams.get("articleId");
+
+    if (!id) {
+      const body = await request.json().catch(() => ({}));
+      id = body?.id || body?.articleId;
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: "Article ID is required." }, { status: 400 });
+    }
+
+    const admin = getSupabaseAdmin();
+    const { error } = await admin
+      .from("journal_articles")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, deletedId: id });
+  } catch (err) {
+    return NextResponse.json(
+      { success: false, error: err instanceof Error ? err.message : "Delete failed." },
       { status: 500 }
     );
   }

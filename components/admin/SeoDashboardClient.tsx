@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Sparkles,
   CheckCircle2,
@@ -18,7 +19,64 @@ import {
   Loader2,
   FileText,
   ShieldCheck,
+  Trash2,
+  Edit3,
+  Search,
+  Filter,
+  Image as ImageIcon,
+  Wand2,
+  X,
+  Eye,
+  Check,
 } from "lucide-react";
+
+export interface DashboardArticle {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  service_pillar: string;
+  status: string;
+  word_count: number;
+  quality_score: number;
+  revision_count: number;
+  image_url: string;
+  image_alt?: string;
+  image_prompt?: string;
+  summary?: string;
+  takeaway?: string;
+  author?: string;
+  author_role?: string;
+  read_time?: string;
+  primary_keyword: string;
+  approval_token: string | null;
+  published_at: string | null;
+  created_at: string;
+}
+
+const SERVICE_PILLARS = [
+  "Website & Web Application Development",
+  "SaaS Product Engineering",
+  "ERP & Custom Operations Software",
+  "POS & Retail Automation Systems",
+  "Custom CRM & Sales Automation",
+  "Mobile Application Development",
+  "E-Commerce Engineering",
+  "Applied AI & Business Automation",
+  "Cloud Infrastructure & DevOps",
+  "Enterprise Cybersecurity",
+  "API & Microservices Architecture",
+  "Legacy System Modernization",
+];
+
+const PRESET_PHOTOS = [
+  { label: "SaaS Platform", url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=90&w=1920&auto=format&fit=crop" },
+  { label: "Operations & ERP", url: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=90&w=1920&auto=format&fit=crop" },
+  { label: "CRM & Analytics", url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=90&w=1920&auto=format&fit=crop" },
+  { label: "Web Engineering", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=90&w=1920&auto=format&fit=crop" },
+  { label: "Cloud DevOps", url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=1920&auto=format&fit=crop" },
+  { label: "Applied AI", url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=90&w=1920&auto=format&fit=crop" },
+];
 
 interface DashboardData {
   configured: boolean;
@@ -55,21 +113,7 @@ interface DashboardData {
     rejected: number;
     inProgress: number;
   };
-  articles?: Array<{
-    id: string;
-    slug: string;
-    title: string;
-    category: string;
-    service_pillar: string;
-    status: string;
-    word_count: number;
-    quality_score: number;
-    revision_count: number;
-    primary_keyword: string;
-    approval_token: string | null;
-    published_at: string | null;
-    created_at: string;
-  }>;
+  articles?: DashboardArticle[];
   jobs?: Array<{
     id: string;
     job_type: string;
@@ -149,6 +193,22 @@ export default function SeoDashboardClient() {
     default_author_role: "Founder & Principal Software Architect",
     approval_email: "",
   });
+
+  // Articles Table: Search, Filter, Infinite Scroll
+  const [articlesSearch, setArticlesSearch] = useState("");
+  const [articlesStatusFilter, setArticlesStatusFilter] = useState("all");
+  const [visibleArticlesCount, setVisibleArticlesCount] = useState(8);
+  const tableSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Edit Article Modal State
+  const [editingArticle, setEditingArticle] = useState<DashboardArticle | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
+  const [imagePromptCustom, setImagePromptCustom] = useState("");
+
+  // Delete Article Confirmation Modal State
+  const [deletingArticle, setDeletingArticle] = useState<DashboardArticle | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     setLoadingData(true);
@@ -293,6 +353,170 @@ export default function SeoDashboardClient() {
       setSavingSettings(false);
     }
   }
+
+  // --- Article Actions (Edit, Delete, Infinite Scroll) ---
+
+  const handleOpenEdit = useCallback((art: DashboardArticle) => {
+    setEditingArticle({ ...art });
+    setImagePromptCustom(art.image_prompt || "");
+  }, []);
+
+  const handleSaveEdit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingArticle) return;
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch("/api/admin/seo/articles", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingArticle),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setBanner({ type: "err", text: json.error || "Failed to update article." });
+      } else {
+        setBanner({ type: "ok", text: `Article "${editingArticle.title}" updated successfully.` });
+        setData((prev) => {
+          if (!prev?.articles) return prev;
+          return {
+            ...prev,
+            articles: prev.articles.map((a) => (a.id === editingArticle.id ? { ...a, ...json.article } : a)),
+          };
+        });
+        setEditingArticle(null);
+      }
+    } catch {
+      setBanner({ type: "err", text: "Network error while saving article edit." });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  }, [editingArticle]);
+
+  const handleRegenerateImage = useCallback(async (articleId: string) => {
+    setIsRegeneratingImage(true);
+    try {
+      const res = await fetch("/api/admin/seo/articles/regenerate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ articleId, customPrompt: imagePromptCustom }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setBanner({ type: "err", text: json.error || "Image regeneration failed." });
+      } else {
+        setBanner({
+          type: "ok",
+          text: `High-resolution image generated (${json.modelUsed}) & saved to Supabase Storage!`,
+        });
+        setEditingArticle((prev) => (prev ? { ...prev, image_url: json.imageUrl } : null));
+        setData((prev) => {
+          if (!prev?.articles) return prev;
+          return {
+            ...prev,
+            articles: prev.articles.map((a) => (a.id === articleId ? { ...a, image_url: json.imageUrl } : a)),
+          };
+        });
+      }
+    } catch {
+      setBanner({ type: "err", text: "Network error during image regeneration." });
+    } finally {
+      setIsRegeneratingImage(false);
+    }
+  }, [imagePromptCustom]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deletingArticle) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/seo/articles?id=${deletingArticle.id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setBanner({ type: "err", text: json.error || "Failed to delete article." });
+      } else {
+        const title = deletingArticle.title;
+        setBanner({ type: "ok", text: `Article "${title}" permanently deleted.` });
+        setData((prev) => {
+          if (!prev?.articles) return prev;
+          const remaining = prev.articles.filter((a) => a.id !== deletingArticle.id);
+          return {
+            ...prev,
+            articles: remaining,
+            stats: prev.stats
+              ? {
+                  ...prev.stats,
+                  totalGenerated: Math.max(0, prev.stats.totalGenerated - 1),
+                  published:
+                    deletingArticle.status === "published"
+                      ? Math.max(0, prev.stats.published - 1)
+                      : prev.stats.published,
+                  pendingApprovals:
+                    deletingArticle.status === "pending_approval"
+                      ? Math.max(0, prev.stats.pendingApprovals - 1)
+                      : prev.stats.pendingApprovals,
+                  rejected:
+                    deletingArticle.status === "rejected"
+                      ? Math.max(0, prev.stats.rejected - 1)
+                      : prev.stats.rejected,
+                }
+              : prev.stats,
+          };
+        });
+        setDeletingArticle(null);
+      }
+    } catch {
+      setBanner({ type: "err", text: "Network error while deleting article." });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deletingArticle]);
+
+  // Filtered & progressively rendered articles for infinite scroll
+  const filteredArticles = useMemo(() => {
+    let list = (data?.articles || []) as DashboardArticle[];
+    if (articlesStatusFilter !== "all") {
+      list = list.filter((a) => a.status === articlesStatusFilter);
+    }
+    if (articlesSearch.trim()) {
+      const q = articlesSearch.toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          a.slug.toLowerCase().includes(q) ||
+          (a.primary_keyword && a.primary_keyword.toLowerCase().includes(q)) ||
+          (a.service_pillar && a.service_pillar.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [data?.articles, articlesStatusFilter, articlesSearch]);
+
+  const visibleArticles = useMemo(() => {
+    return filteredArticles.slice(0, visibleArticlesCount);
+  }, [filteredArticles, visibleArticlesCount]);
+
+  useEffect(() => {
+    setVisibleArticlesCount(8);
+  }, [articlesSearch, articlesStatusFilter]);
+
+  useEffect(() => {
+    if (!tableSentinelRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleArticlesCount((prev) => {
+            if (prev < filteredArticles.length) {
+              return prev + 6;
+            }
+            return prev;
+          });
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(tableSentinelRef.current);
+    return () => observer.disconnect();
+  }, [filteredArticles.length]);
 
   function toggleDay(day: string) {
     setFormSettings((prev) => {
@@ -553,14 +777,89 @@ export default function SeoDashboardClient() {
         {/* TAB 1: ARTICLES & PIPELINE */}
         {activeTab === "overview" && data?.configured && (
           <div className="flex flex-col gap-6">
-            <div className="bg-[#140A0C] border border-[#2C181B] rounded-2xl overflow-hidden">
-              <div className="p-5 border-b border-[#2C181B] flex items-center justify-between">
-                <h2 className="font-display text-xl text-[#F5EFE6]">
-                  Generated Journal Articles
-                </h2>
-                <span className="font-mono text-xs text-[#8A8175]">
-                  Zero auto-publishing — all drafts require explicit approval
-                </span>
+            <div className="bg-[#140A0C] border border-[#2C181B] rounded-2xl overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="p-5 border-b border-[#2C181B] flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#0B0607]/40">
+                <div>
+                  <h2 className="font-display text-xl text-[#F5EFE6]">
+                    Generated Journal Articles
+                  </h2>
+                  <p className="font-mono text-xs text-[#8A8175] mt-0.5">
+                    Search, edit copy & 1080p images, delete drafts, or review pending approvals
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs px-3 py-1 rounded-full bg-[#1B0E10] border border-[#2C181B] text-[#C4B5A5]">
+                    Showing {visibleArticles.length} of {filteredArticles.length} ({data.articles?.length || 0} total)
+                  </span>
+                </div>
+              </div>
+
+              {/* Search & Filter Toolbar */}
+              <div className="p-4 border-b border-[#2C181B] bg-[#0E0709] flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+                {/* Search Input */}
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-[#8A8175] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={articlesSearch}
+                    onChange={(e) => setArticlesSearch(e.target.value)}
+                    placeholder="Search by title, slug, keyword, or pillar..."
+                    className="w-full pl-9 pr-8 py-2 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-xs placeholder:text-[#8A8175] focus:border-[#D6334A] outline-none"
+                  />
+                  {articlesSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setArticlesSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8A8175] hover:text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
+                  {[
+                    { id: "all", label: "All", count: data.articles?.length || 0 },
+                    {
+                      id: "pending_approval",
+                      label: "Pending",
+                      count: (data.articles || []).filter((a) => a.status === "pending_approval").length,
+                    },
+                    {
+                      id: "published",
+                      label: "Published",
+                      count: (data.articles || []).filter((a) => a.status === "published").length,
+                    },
+                    {
+                      id: "drafting",
+                      label: "Drafts",
+                      count: (data.articles || []).filter((a) => ["drafting", "qa_revising", "revision_requested"].includes(a.status)).length,
+                    },
+                    {
+                      id: "rejected",
+                      label: "Rejected",
+                      count: (data.articles || []).filter((a) => a.status === "rejected").length,
+                    },
+                  ].map((tab) => {
+                    const active = articlesStatusFilter === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setArticlesStatusFilter(tab.id)}
+                        className={`px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                          active
+                            ? "bg-[#D6334A] border-[#D6334A] text-white font-semibold"
+                            : "bg-[#140A0C] border-[#2C181B] text-[#8A8175] hover:text-[#F5EFE6] hover:border-[#D6334A]/40"
+                        }`}
+                      >
+                        {tab.label} ({tab.count})
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {!data.articles || data.articles.length === 0 ? (
@@ -568,30 +867,72 @@ export default function SeoDashboardClient() {
                   No articles generated yet. Click <strong>Run 1 Test Article</strong> above
                   to execute the complete Research → Write → Image → QA → Email Approval flow.
                 </div>
+              ) : filteredArticles.length === 0 ? (
+                <div className="p-10 text-center text-sm text-[#8A8175]">
+                  No articles matched your search or status filter.{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setArticlesSearch("");
+                      setArticlesStatusFilter("all");
+                    }}
+                    className="underline text-[#D6334A] cursor-pointer"
+                  >
+                    Clear filters
+                  </button>
+                </div>
               ) : (
-                <div className="overflow-x-auto">
+                /* Infinite Scroll Table View */
+                <div className="max-h-[580px] overflow-y-auto overflow-x-auto relative">
                   <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#2C181B] font-mono text-[11px] uppercase text-[#8A8175] bg-[#0B0607]/60">
-                        <th className="py-3 px-5">Article</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4">QA Score</th>
-                        <th className="py-3 px-4">Words</th>
-                        <th className="py-3 px-5 text-right">Actions</th>
+                    <thead className="sticky top-0 bg-[#0B0607]/95 backdrop-blur z-10 border-b border-[#2C181B]">
+                      <tr className="font-mono text-[11px] uppercase text-[#8A8175]">
+                        <th className="py-3 px-4">Article</th>
+                        <th className="py-3 px-3">Pillar</th>
+                        <th className="py-3 px-3">Image</th>
+                        <th className="py-3 px-3">Status</th>
+                        <th className="py-3 px-3">QA</th>
+                        <th className="py-3 px-3">Words</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#2C181B] text-sm">
-                      {data.articles.map((art) => (
-                        <tr key={art.id} className="hover:bg-[#1B0E10]/50">
-                          <td className="py-4 px-5">
-                            <div className="font-medium text-[#F5EFE6]">{art.title}</div>
-                            <div className="font-mono text-[11px] text-[#8A8175] mt-0.5">
+                      {visibleArticles.map((art) => (
+                        <tr key={art.id} className="hover:bg-[#1B0E10]/50 transition-colors">
+                          <td className="py-3.5 px-4 max-w-xs">
+                            <div className="font-medium text-[#F5EFE6] line-clamp-1">{art.title}</div>
+                            <div className="font-mono text-[11px] text-[#8A8175] mt-0.5 truncate">
                               /blog/{art.slug} · KW: {art.primary_keyword}
                             </div>
                           </td>
-                          <td className="py-4 px-4">
+                          <td className="py-3.5 px-3">
+                            <span className="font-mono text-[11px] text-[#C4B5A5] line-clamp-1">
+                              {art.service_pillar || art.category}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3">
+                            {art.image_url ? (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEdit(art)}
+                                title="Click to view/edit image"
+                                className="block rounded-lg overflow-hidden border border-[#2C181B] hover:border-[#D6334A] transition-all cursor-pointer"
+                              >
+                                <img
+                                  src={art.image_url}
+                                  alt={art.title}
+                                  className="w-14 h-9 object-cover"
+                                />
+                              </button>
+                            ) : (
+                              <div className="w-14 h-9 rounded-lg bg-[#0B0607] border border-[#2C181B] flex items-center justify-center text-[#8A8175]">
+                                <ImageIcon className="w-3.5 h-3.5" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-3">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[11px] uppercase font-semibold ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] uppercase font-semibold ${
                                 art.status === "published"
                                   ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
                                   : art.status === "pending_approval"
@@ -607,47 +948,75 @@ export default function SeoDashboardClient() {
                               {art.status.replace("_", " ")}
                             </span>
                           </td>
-                          <td className="py-4 px-4 font-mono text-xs text-[#F5EFE6]">
+                          <td className="py-3.5 px-3 font-mono text-xs text-[#F5EFE6]">
                             {art.quality_score}/100
                           </td>
-                          <td className="py-4 px-4 font-mono text-xs text-[#C4B5A5]">
+                          <td className="py-3.5 px-3 font-mono text-xs text-[#C4B5A5]">
                             {art.word_count}
                           </td>
-                          <td className="py-4 px-5 text-right font-mono text-xs space-x-3">
-                            {art.status === "published" && (
-                              <a
-                                href={`/blog/${art.slug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-emerald-400 hover:underline inline-flex items-center gap-1"
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="inline-flex items-center gap-2">
+                              {/* Edit Action Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEdit(art)}
+                                title="Edit Article & Image"
+                                className="p-1.5 rounded-lg bg-[#0B0607] border border-[#2C181B] text-[#C4B5A5] hover:text-white hover:border-[#F5EFE6]/50 transition-colors cursor-pointer"
                               >
-                                <span>Live</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                            {art.status === "pending_approval" && art.approval_token && (
-                              <>
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Delete Action Button */}
+                              <button
+                                type="button"
+                                onClick={() => setDeletingArticle(art)}
+                                title="Delete Article"
+                                className="p-1.5 rounded-lg bg-[#0B0607] border border-[#2C181B] text-[#8A8175] hover:text-[#D6334A] hover:border-[#D6334A]/50 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Links */}
+                              {art.status === "published" && (
                                 <a
-                                  href={`/blog/${art.slug}?preview=${encodeURIComponent(art.approval_token)}`}
+                                  href={`/blog/${art.slug}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[#C4B5A5] hover:text-white underline"
+                                  className="text-emerald-400 hover:underline font-mono text-xs inline-flex items-center gap-0.5"
                                 >
-                                  Preview
+                                  <span>Live</span>
+                                  <ExternalLink className="w-3 h-3" />
                                 </a>
+                              )}
+                              {art.status === "pending_approval" && art.approval_token && (
                                 <a
                                   href={`/journals/review?token=${encodeURIComponent(art.approval_token)}&action=approve`}
-                                  className="text-[#D6334A] hover:underline font-semibold"
+                                  className="text-[#D6334A] hover:underline font-mono text-xs font-semibold"
                                 >
                                   Review
                                 </a>
-                              </>
-                            )}
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+
+                  {/* Infinite Scroll Sentinel & Indicator */}
+                  <div
+                    ref={tableSentinelRef}
+                    className="p-4 text-center font-mono text-xs text-[#8A8175] border-t border-[#2C181B]/50 flex items-center justify-center gap-2 bg-[#0B0607]/60"
+                  >
+                    {visibleArticles.length < filteredArticles.length ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 text-[#D6334A] animate-spin" />
+                        <span>Scroll down to load more articles...</span>
+                      </>
+                    ) : (
+                      <span>✓ All {filteredArticles.length} articles loaded</span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1011,6 +1380,281 @@ export default function SeoDashboardClient() {
                 </button>
               </form>
             )}
+          </div>
+        )}
+
+        {/* MODAL 1: EDIT ARTICLE MODAL */}
+        {editingArticle && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-3xl bg-[#140A0C] border border-[#2C181B] rounded-3xl p-6 md:p-8 flex flex-col gap-6 my-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[#2C181B] pb-4">
+                <div>
+                  <h3 className="font-display text-xl text-[#F5EFE6]">Edit Journal Article</h3>
+                  <p className="font-mono text-xs text-[#8A8175] mt-0.5">
+                    Update metadata, copy, or featured 1080p image. Changes save immediately to live journal.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingArticle(null)}
+                  className="w-8 h-8 rounded-full bg-[#1B0E10] border border-[#2C181B] flex items-center justify-center text-[#8A8175] hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEdit} className="flex flex-col gap-5">
+                {/* Title */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-mono text-xs uppercase text-[#C4B5A5]">Article Title (H1)</label>
+                  <input
+                    type="text"
+                    value={editingArticle.title}
+                    onChange={(e) => setEditingArticle({ ...editingArticle, title: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-sm focus:border-[#D6334A] outline-none"
+                    required
+                  />
+                </div>
+
+                {/* Slug & Pillar */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-mono text-xs uppercase text-[#C4B5A5]">Slug (/blog/[slug])</label>
+                    <input
+                      type="text"
+                      value={editingArticle.slug}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, slug: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] font-mono text-xs focus:border-[#D6334A] outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-mono text-xs uppercase text-[#C4B5A5]">Service Pillar</label>
+                    <select
+                      value={editingArticle.service_pillar}
+                      onChange={(e) =>
+                        setEditingArticle({
+                          ...editingArticle,
+                          service_pillar: e.target.value,
+                          category: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-sm focus:border-[#D6334A] outline-none"
+                    >
+                      {SERVICE_PILLARS.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Status & Read Time */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-mono text-xs uppercase text-[#C4B5A5]">Article Status</label>
+                    <select
+                      value={editingArticle.status}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, status: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-sm focus:border-[#D6334A] outline-none"
+                    >
+                      <option value="drafting">Drafting</option>
+                      <option value="qa_revising">QA Revising</option>
+                      <option value="pending_approval">Pending Approval</option>
+                      <option value="revision_requested">Revision Requested</option>
+                      <option value="published">Published</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-mono text-xs uppercase text-[#C4B5A5]">Read Time</label>
+                    <input
+                      type="text"
+                      value={editingArticle.read_time || "7 min read"}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, read_time: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-sm focus:border-[#D6334A] outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Executive Summary */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-mono text-xs uppercase text-[#C4B5A5]">Executive Summary / Excerpt</label>
+                  <textarea
+                    rows={3}
+                    value={editingArticle.summary || ""}
+                    onChange={(e) => setEditingArticle({ ...editingArticle, summary: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-sm focus:border-[#D6334A] outline-none resize-y"
+                  />
+                </div>
+
+                {/* Key Architectural Takeaway */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-mono text-xs uppercase text-[#C4B5A5]">Key Takeaway</label>
+                  <textarea
+                    rows={2}
+                    value={editingArticle.takeaway || ""}
+                    onChange={(e) => setEditingArticle({ ...editingArticle, takeaway: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-sm focus:border-[#D6334A] outline-none resize-y"
+                  />
+                </div>
+
+                {/* Featured Image Management */}
+                <div className="p-4 rounded-2xl bg-[#0B0607] border border-[#2C181B] flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs uppercase font-bold text-[#F5EFE6] flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-[#D6334A]" />
+                      <span>Featured 16:9 Image</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRegenerateImage(editingArticle.id)}
+                      disabled={isRegeneratingImage}
+                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1B0E10] border border-[#D6334A]/50 hover:bg-[#D6334A] text-[#F5EFE6] font-mono text-xs cursor-pointer disabled:opacity-50 transition-all"
+                    >
+                      {isRegeneratingImage ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-3.5 h-3.5 text-amber-300" />
+                      )}
+                      <span>{isRegeneratingImage ? "Generating FLUX 1080p..." : "✨ Regenerate FLUX 1080p"}</span>
+                    </button>
+                  </div>
+
+                  {/* Image Preview Box */}
+                  <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-[#2C181B] bg-[#140A0C]">
+                    {editingArticle.image_url ? (
+                      <img
+                        src={editingArticle.image_url}
+                        alt={editingArticle.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#8A8175] text-xs font-mono">
+                        No image set
+                      </div>
+                    )}
+                    {isRegeneratingImage && (
+                      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
+                        <Loader2 className="w-7 h-7 text-[#D6334A] animate-spin" />
+                        <span className="font-mono text-xs">Generating ultra-HD FLUX 1080p image & uploading...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Direct URL input */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-mono text-[11px] uppercase text-[#8A8175]">Image URL</label>
+                    <input
+                      type="url"
+                      value={editingArticle.image_url || ""}
+                      onChange={(e) => setEditingArticle({ ...editingArticle, image_url: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-3.5 py-2 rounded-xl bg-[#140A0C] border border-[#2C181B] text-[#F5EFE6] font-mono text-xs focus:border-[#D6334A] outline-none"
+                    />
+                  </div>
+
+                  {/* Quick Photography Presets */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-mono text-[11px] uppercase text-[#8A8175]">
+                      Or select from curated 1080p enterprise photography presets:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {PRESET_PHOTOS.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setEditingArticle({ ...editingArticle, image_url: preset.url })}
+                          className={`px-3 py-1 rounded-full font-mono text-[11px] transition-all cursor-pointer ${
+                            editingArticle.image_url === preset.url
+                              ? "bg-[#D6334A] text-white"
+                              : "bg-[#140A0C] border border-[#2C181B] text-[#C4B5A5] hover:text-white hover:border-[#D6334A]/50"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2C181B]">
+                  <button
+                    type="button"
+                    onClick={() => setEditingArticle(null)}
+                    className="px-5 py-2.5 rounded-full bg-[#140A0C] border border-[#2C181B] text-[#C4B5A5] hover:text-white font-mono text-xs uppercase tracking-wider cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#D6334A] hover:bg-[#e0455b] text-white font-mono text-xs font-bold uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingEdit ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isSavingEdit ? "Saving Changes..." : "Save Changes"}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 2: DELETE CONFIRMATION MODAL */}
+        {deletingArticle && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-[#140A0C] border border-[#D6334A]/40 rounded-3xl p-6 md:p-8 flex flex-col gap-5 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-[#D6334A]/15 border border-[#D6334A]/30 flex items-center justify-center text-[#D6334A]">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg text-[#F5EFE6]">Delete Article?</h3>
+                  <p className="font-mono text-xs text-[#8A8175]">Permanent action</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-[#C4B5A5] leading-relaxed">
+                Are you sure you want to permanently delete{" "}
+                <strong className="text-white">&ldquo;{deletingArticle.title}&rdquo;</strong> (
+                <span className="font-mono text-xs text-[#D6334A]">/blog/{deletingArticle.slug}</span>
+                )?
+              </p>
+              <p className="text-xs text-[#8A8175]">
+                This will remove the article draft, quality scoring records, and associated pipeline history.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setDeletingArticle(null)}
+                  className="px-4 py-2 rounded-full bg-[#0B0607] border border-[#2C181B] text-[#C4B5A5] hover:text-white font-mono text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={handleConfirmDelete}
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#D6334A] hover:bg-[#b02237] text-white font-mono text-xs font-bold uppercase tracking-wider cursor-pointer disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isDeleting ? "Deleting..." : "Delete Permanently"}</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -166,7 +166,7 @@ export default function WebziFireBot() {
     {
       id: "1",
       sender: "bot",
-      text: "Hello! I am the WebziFire AI Assistant, powered by Gemini. Ask me about our 12 engineering practices, project scoping, architecture, or tech stacks!",
+      text: "Hello! I am WebziFire AI, powered by Google Gemini. Ask me about our 12 engineering practices, project scoping, architecture, or custom tech stacks!",
       time: "Just now",
     },
   ]);
@@ -320,9 +320,15 @@ export default function WebziFireBot() {
             )}
           </div>
         </div>
-        <span className="hidden md:inline-block ml-3 pr-2 font-mono text-xs uppercase tracking-wider font-semibold text-[#F5EFE6]">
-          WebziFire AI
-        </span>
+        <div className="hidden md:flex flex-col text-left ml-3 pr-2">
+          <span className="font-mono text-xs uppercase tracking-wider font-semibold text-[#F5EFE6] leading-tight">
+            WebziFire AI
+          </span>
+          <span className="font-mono text-[10px] text-[#D6334A] font-medium flex items-center gap-1">
+            <Sparkles className="w-2.5 h-2.5" />
+            Powered by Gemini
+          </span>
+        </div>
       </button>
 
       {/* Expandable Chat Drawer */}
@@ -340,13 +346,18 @@ export default function WebziFireBot() {
                 />
               </div>
               <div className="flex flex-col">
-                <span className="font-display text-sm font-medium text-[#F5EFE6] flex items-center gap-1.5">
-                  WebziFire AI
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A] inline-block shadow-[0_0_6px_#D6334A]" />
-                </span>
-                <span className="font-mono text-[10px] text-[#8A8175] flex items-center gap-1">
-                  <Sparkles className="w-2.5 h-2.5 text-[#D6334A]" />
-                  Gemini-Powered Senior Consultant
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-sm font-medium text-[#F5EFE6]">
+                    WebziFire AI
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#D6334A]/15 border border-[#D6334A]/40 font-mono text-[9px] uppercase tracking-wider font-semibold text-[#F5EFE6]">
+                    <Sparkles className="w-2.5 h-2.5 text-[#D6334A]" />
+                    Powered by Gemini
+                  </span>
+                </div>
+                <span className="font-mono text-[10px] text-[#8A8175] flex items-center gap-1 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shadow-[0_0_6px_#10B981]" />
+                  Senior Engineering &amp; Scoping Consultant
                 </span>
               </div>
             </div>
@@ -419,7 +430,7 @@ export default function WebziFireBot() {
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A] animate-bounce [animation-delay:-0.15s]" />
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A] animate-bounce" />
                   </div>
-                  <span className="font-mono text-[10px] text-[#8A8175]">WebziFire AI is thinking...</span>
+                  <span className="font-mono text-[10px] text-[#8A8175]">WebziFire AI (Gemini) is thinking...</span>
                 </div>
               </div>
             )}
@@ -549,7 +560,7 @@ export default function WebziFireBot() {
             >
               <input
                 type="text"
-                placeholder={isThinking ? "WebziFire AI is thinking..." : "Ask WebziFire AI anything..."}
+                placeholder={isThinking ? "WebziFire AI (Gemini) is thinking..." : "Ask WebziFire AI (Powered by Gemini)..."}
                 disabled={isThinking}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
@@ -569,9 +580,9 @@ export default function WebziFireBot() {
             </form>
             <div className="flex items-center justify-between pt-2 px-1 text-[10px] font-mono text-[#8A8175]">
               <span>Press Enter to send</span>
-              <span className="text-[#D6334A] font-medium flex items-center gap-1">
-                <Sparkles className="w-2.5 h-2.5" />
-                WebziFire AI 2.0
+              <span className="text-[#C4B5A5] font-medium flex items-center gap-1.5 bg-[#1B0E10] px-2.5 py-0.5 rounded-full border border-[#2C181B]">
+                <Sparkles className="w-2.5 h-2.5 text-[#D6334A]" />
+                <span>Powered by <strong className="text-[#F5EFE6] font-semibold">Gemini</strong></span>
               </span>
             </div>
           </div>

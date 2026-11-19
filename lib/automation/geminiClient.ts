@@ -353,180 +353,190 @@ export async function callGeminiStructuredJson<T>(params: {
 }
 
 /**
- * Generates a featured image using currently supported 2026 native Gemini image models
- * (legacy Imagen 3/4 endpoints were shut down Aug 2026).
+ * Generates an ultra-high-definition, crystal-clear 16:9 featured image.
+ * Hierarchy:
+ * 1. Google Imagen 3 (imagen-3.0-generate-002:predict) via Gemini API
+ * 2. High-Fidelity FLUX.1 (1920x1080, enhance=true, seed) via Pollinations
+ * 3. High-Definition Curated Enterprise Photography (1920x1080, Q=90) from Unsplash
+ * 4. Sophisticated Titanium Enterprise Editorial PNG (neutral dark slate/silver, NO red cast)
  */
 export async function callGeminiImageGen(params: {
   prompt: string;
   articleId?: string | null;
   servicePillar?: string | null;
 }): Promise<{ buffer: Buffer; mimeType: string; modelUsed: string }> {
-  const candidateModels = ["gemini-3.1-flash-image"];
+  const cleanPrompt = params.prompt
+    .replace(/crimson|obsidian|red light|red accents|red glow|dark red|red cast/gi, "modern bright")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  let lastErrorMsg = "";
-
-  for (const model of candidateModels) {
+  // Tier 1: Google Imagen 3 via AI Studio API
+  try {
     const start = Date.now();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict`;
     const payload = {
-      contents: [
+      instances: [
         {
-          role: "user",
-          parts: [
-            {
-              text: `${params.prompt}\n\nVisual requirements: Widescreen 16:9 high-definition editorial tech photography, natural bright daylight and clean modern lighting, realistic colors, NO heavy red casts or crimson filters, sharp focus, professional authentic setting, NO embedded text, NO watermarks, NO logos.`,
-            },
-          ],
+          prompt: `${cleanPrompt}, professional modern editorial tech photography, natural bright ambient lighting, sleek corporate environment, authentic workspace with modern displays, sharp focus, 8k resolution, 16:9 widescreen, no text, no logo, no watermark`,
         },
       ],
-      generationConfig: {
-        responseModalities: ["TEXT", "IMAGE"],
+      parameters: {
+        sampleCount: 1,
+        aspectRatio: "16:9",
+        outputMimeType: "image/jpeg",
+        personGeneration: "ALLOW_ADULT",
       },
     };
 
     const res = await fetchWithRetry(url, payload, 0);
     const latencyMs = Date.now() - start;
 
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => "");
-      lastErrorMsg = `${model} HTTP ${res.status}: ${errBody.slice(0, 300)}`;
-      await logAiUsage({
-        articleId: params.articleId,
-        jobType: "generate_image",
-        model,
-        promptTokens: 0,
-        outputTokens: 0,
-        imageCount: 0,
-        latencyMs,
-        success: false,
-        errorMessage: lastErrorMsg,
-      });
-      continue;
-    }
-
-    const raw = await res.json();
-    const usage = raw?.usageMetadata || {};
-    const parts: Array<{ inlineData?: { data?: string; mimeType?: string } }> =
-      raw?.candidates?.[0]?.content?.parts || [];
-    const imgPart = parts.find((p) => p.inlineData?.data);
-
-    if (imgPart?.inlineData?.data) {
-      const mimeType = imgPart.inlineData.mimeType || "image/png";
-      const buffer = Buffer.from(imgPart.inlineData.data, "base64");
-      await logAiUsage({
-        articleId: params.articleId,
-        jobType: "generate_image",
-        model,
-        promptTokens: Number(usage.promptTokenCount || 0),
-        outputTokens: Number(usage.candidatesTokenCount || 0),
-        imageCount: 1,
-        latencyMs,
-        success: true,
-      });
-      return { buffer, mimeType, modelUsed: model };
-    }
-
-    lastErrorMsg = `${model} returned no inlineData image part`;
-    await logAiUsage({
-      articleId: params.articleId,
-      jobType: "generate_image",
-      model,
-      promptTokens: Number(usage.promptTokenCount || 0),
-      outputTokens: Number(usage.candidatesTokenCount || 0),
-      imageCount: 0,
-      latencyMs,
-      success: false,
-      errorMessage: lastErrorMsg,
-    });
-  }
-
-  // Resilient Fallback 1: Fast, photorealistic AI image generation via Pollinations
-  try {
-    const cleanPrompt = params.prompt.replace(/crimson|obsidian|red light|red accents|red glow/gi, "").trim();
-    const aiPrompt = encodeURIComponent(
-      `${cleanPrompt}, modern professional technology, bright natural daylight, clean sleek workspace, authentic editorial photography, 8k resolution, sharp focus, cinematic 16:9, no text`
-    );
-    const pollUrl = `https://image.pollinations.ai/prompt/${aiPrompt}?width=1200&height=675&nologo=true`;
-    const pollRes = await fetch(pollUrl, { signal: AbortSignal.timeout(12000) });
-    if (pollRes.ok) {
-      const pollBuf = Buffer.from(await pollRes.arrayBuffer());
-      if (pollBuf.byteLength > 5000) {
+    if (res.ok) {
+      const raw = await res.json();
+      const b64 = raw?.predictions?.[0]?.bytesBase64Encoded;
+      if (b64) {
+        const buffer = Buffer.from(b64, "base64");
         await logAiUsage({
           articleId: params.articleId,
           jobType: "generate_image",
-          model: "pollinations-ai-gen",
+          model: "imagen-3.0-generate-002",
           promptTokens: 0,
           outputTokens: 0,
           imageCount: 1,
-          latencyMs: 1800,
+          latencyMs,
           success: true,
         });
-        return { buffer: pollBuf, mimeType: "image/jpeg", modelUsed: "pollinations-ai-gen" };
+        return { buffer, mimeType: "image/jpeg", modelUsed: "imagen-3.0-generate-002" };
       }
     }
-  } catch (pollErr) {
-    console.warn("[GeminiClient] Pollinations AI image gen fallback attempt:", pollErr);
+  } catch (imagenErr) {
+    console.warn("[GeminiClient] Imagen 3 attempt skipped or unavailable:", imagenErr);
   }
 
-  // Resilient Fallback 2: High-resolution curated enterprise photography
+  // Tier 2: Ultra-HD FLUX.1 Engine via Pollinations (1920x1080 photorealistic)
+  try {
+    const startFlux = Date.now();
+    const aiPrompt = encodeURIComponent(
+      `${cleanPrompt}, modern professional technology, bright natural daylight, clean sleek workspace, authentic editorial photography, ultra high definition 8k, sharp focus, cinematic 16:9 widescreen, high dynamic range, photorealistic textures, no text, no watermark`
+    );
+    const seed = Math.floor(Math.random() * 900000) + 100000;
+    const pollFluxUrl = `https://image.pollinations.ai/prompt/${aiPrompt}?width=1920&height=1080&model=flux&enhance=true&nologo=true&seed=${seed}`;
+
+    const pollRes = await fetch(pollFluxUrl, { signal: AbortSignal.timeout(25000) });
+    if (pollRes.ok) {
+      const pollBuf = Buffer.from(await pollRes.arrayBuffer());
+      if (pollBuf.byteLength > 12000) {
+        const latencyMs = Date.now() - startFlux;
+        await logAiUsage({
+          articleId: params.articleId,
+          jobType: "generate_image",
+          model: "flux-1.0-ultra-hd",
+          promptTokens: 0,
+          outputTokens: 0,
+          imageCount: 1,
+          latencyMs,
+          success: true,
+        });
+        return { buffer: pollBuf, mimeType: "image/jpeg", modelUsed: "flux-1.0-ultra-hd" };
+      }
+    }
+  } catch (fluxErr) {
+    console.warn("[GeminiClient] Pollinations FLUX.1 attempt:", fluxErr);
+  }
+
+  // Tier 2b: Fast Pollinations Turbo high-resolution fallback
+  try {
+    const aiPrompt = encodeURIComponent(
+      `${cleanPrompt}, modern corporate software engineering, bright daylight, clean displays, sharp focus, 16:9, no text`
+    );
+    const pollTurboUrl = `https://image.pollinations.ai/prompt/${aiPrompt}?width=1920&height=1080&model=turbo&enhance=true&nologo=true`;
+    const turboRes = await fetch(pollTurboUrl, { signal: AbortSignal.timeout(12000) });
+    if (turboRes.ok) {
+      const turboBuf = Buffer.from(await turboRes.arrayBuffer());
+      if (turboBuf.byteLength > 8000) {
+        await logAiUsage({
+          articleId: params.articleId,
+          jobType: "generate_image",
+          model: "pollinations-turbo-1080p",
+          promptTokens: 0,
+          outputTokens: 0,
+          imageCount: 1,
+          latencyMs: 2200,
+          success: true,
+        });
+        return { buffer: turboBuf, mimeType: "image/jpeg", modelUsed: "pollinations-turbo-1080p" };
+      }
+    }
+  } catch (turboErr) {
+    console.warn("[GeminiClient] Pollinations Turbo attempt:", turboErr);
+  }
+
+  // Tier 3: High-Resolution Curated Enterprise Editorial Photography (1920x1080, Q=90)
   const THEMATIC_PHOTOS: Record<string, string> = {
-    "Website & Web Application Development": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1200&auto=format&fit=crop",
-    "SaaS Product Engineering": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop",
-    "ERP & Custom Operations Software": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1200&auto=format&fit=crop",
-    "POS & Retail Automation Systems": "https://images.unsplash.com/photo-1556742049-0a67c5574f73?q=80&w=1200&auto=format&fit=crop",
-    "Custom CRM & Sales Automation": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200&auto=format&fit=crop",
-    "Mobile Application Development": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=1200&auto=format&fit=crop",
-    "E-Commerce Engineering": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=1200&auto=format&fit=crop",
-    "Applied AI & Business Automation": "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1200&auto=format&fit=crop",
+    "Website & Web Application Development": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=90&w=1920&auto=format&fit=crop",
+    "SaaS Product Engineering": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=90&w=1920&auto=format&fit=crop",
+    "ERP & Custom Operations Software": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=90&w=1920&auto=format&fit=crop",
+    "POS & Retail Automation Systems": "https://images.unsplash.com/photo-1556742049-0a67c5574f73?q=90&w=1920&auto=format&fit=crop",
+    "Custom CRM & Sales Automation": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=90&w=1920&auto=format&fit=crop",
+    "Mobile Application Development": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=90&w=1920&auto=format&fit=crop",
+    "E-Commerce Engineering": "https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=90&w=1920&auto=format&fit=crop",
+    "Applied AI & Business Automation": "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=90&w=1920&auto=format&fit=crop",
+    "Cloud Infrastructure & DevOps": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=1920&auto=format&fit=crop",
+    "Enterprise Cybersecurity": "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=90&w=1920&auto=format&fit=crop",
+    "API & Microservices Architecture": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=90&w=1920&auto=format&fit=crop",
+    "Legacy System Modernization": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=90&w=1920&auto=format&fit=crop",
   };
 
   const photoUrl =
     (params.servicePillar && THEMATIC_PHOTOS[params.servicePillar]) ||
-    THEMATIC_PHOTOS["ERP & Custom Operations Software"];
+    THEMATIC_PHOTOS["Custom CRM & Sales Automation"] ||
+    THEMATIC_PHOTOS["Website & Web Application Development"];
 
   try {
-    const photoRes = await fetch(photoUrl);
+    const photoRes = await fetch(photoUrl, { signal: AbortSignal.timeout(10000) });
     if (photoRes.ok) {
       const photoBuffer = Buffer.from(await photoRes.arrayBuffer());
-      await logAiUsage({
-        articleId: params.articleId,
-        jobType: "generate_image",
-        model: "curated-enterprise-photo",
-        promptTokens: 0,
-        outputTokens: 0,
-        imageCount: 1,
-        latencyMs: 150,
-        success: true,
-      });
-      return { buffer: photoBuffer, mimeType: "image/jpeg", modelUsed: "curated-enterprise-photo" };
+      if (photoBuffer.byteLength > 10000) {
+        await logAiUsage({
+          articleId: params.articleId,
+          jobType: "generate_image",
+          model: "curated-enterprise-photo-1080p",
+          promptTokens: 0,
+          outputTokens: 0,
+          imageCount: 1,
+          latencyMs: 180,
+          success: true,
+        });
+        return { buffer: photoBuffer, mimeType: "image/jpeg", modelUsed: "curated-enterprise-photo-1080p" };
+      }
     }
-  } catch {
-    // If external fetch fails, proceed to local generated PNG
+  } catch (photoErr) {
+    console.warn("[GeminiClient] High-res curated photo fallback:", photoErr);
   }
 
-  // Resilient Fallback 2: High-definition 1200x675 branded Obsidian Crimson editorial banner PNG
+  // Tier 4: Sophisticated Titanium Enterprise Editorial PNG (neutral dark slate/silver, NO red cast)
   console.warn(
-    `[GeminiClient] Native Gemini image generation hit quota limits (${lastErrorMsg}). Falling back to WebziFire Obsidian Crimson editorial banner.`
+    "[GeminiClient] Generating neutral high-definition titanium editorial banner."
   );
-  const fallbackPng = createBrandedEditorialPng(1200, 675);
+  const fallbackPng = createBrandedEditorialPng(1920, 1080);
   await logAiUsage({
     articleId: params.articleId,
     jobType: "generate_image",
-    model: "webzifire-editorial-png",
+    model: "webzifire-titanium-png",
     promptTokens: 0,
     outputTokens: 0,
     imageCount: 1,
-    latencyMs: 50,
+    latencyMs: 60,
     success: true,
   });
-  return { buffer: fallbackPng, mimeType: "image/png", modelUsed: "webzifire-editorial-png" };
+  return { buffer: fallbackPng, mimeType: "image/png", modelUsed: "webzifire-titanium-png" };
 }
 
 /**
  * Pure Node.js 24-bit PNG generator (zero external dependencies).
- * Generates an elegant Obsidian Crimson (#0B0607 / #D6334A) editorial hero banner.
+ * Generates an elegant neutral dark titanium / slate editorial hero banner (NO red cast).
  */
-function createBrandedEditorialPng(width = 1200, height = 675): Buffer {
+function createBrandedEditorialPng(width = 1920, height = 1080): Buffer {
   const rowBytes = 1 + width * 3;
   const rawData = Buffer.alloc(rowBytes * height);
 
@@ -544,14 +554,15 @@ function createBrandedEditorialPng(width = 1200, height = 675): Buffer {
       const dy = y - cy;
       const dist = Math.sqrt(dx * dx + dy * dy) / maxDist;
 
-      // Glow factor: radial gradient centered at (cx, cy)
-      const glow = Math.max(0, 1 - dist * 1.5);
+      // Glow factor: gentle radial gradient centered at (cx, cy)
+      const glow = Math.max(0, 1 - dist * 1.3);
 
-      // Base: Obsidian Charcoal #0B, #06, #07
-      // Glow: Crimson Red #D6, #33, #4A
-      const r = Math.min(255, Math.floor(11 + 203 * glow));
-      const g = Math.min(255, Math.floor(6 + 45 * glow));
-      const b = Math.min(255, Math.floor(7 + 67 * glow));
+      // Neutral High-Tech Dark Slate & Platinum (zero red cast)
+      // Base: Deep Slate Navy #0B #0E #14
+      // Glow: Subtle Platinum / Ice Steel #47 #55 #69 -> #94 #A3 #B8
+      const r = Math.min(255, Math.floor(11 + 45 * glow));
+      const g = Math.min(255, Math.floor(14 + 55 * glow));
+      const b = Math.min(255, Math.floor(20 + 75 * glow));
 
       rawData[pxOffset] = r;
       rawData[pxOffset + 1] = g;
