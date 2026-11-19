@@ -321,21 +321,21 @@ export default function PortfolioSection() {
           ))}
         </div>
 
-        {/* Global Wins Callout Banner */}
+        {/* Proven Track Record Callout Banner */}
         <div className="bg-[#140A0C] rounded-2xl border border-[#2C181B] p-8 sm:p-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
           <div className="flex items-start sm:items-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-[#1B0E10] flex items-center justify-center border border-[#2C181B] text-[#D6334A] shrink-0 shadow-sm">
-              <Award className="w-7 h-7" />
+              <CheckCircle2 className="w-7 h-7" />
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono text-xs uppercase tracking-wider text-[#D6334A] font-semibold">
-                Independent Industry Validation
+                Proven Track Record
               </span>
               <h3 className="font-display font-light text-2xl sm:text-3xl text-[#F5EFE6]">
-                Independent proof. Three global wins.
+                Proven results. 80+ projects delivered.
               </h3>
               <p className="font-sans text-sm text-[#C4B5A5]/80">
-                WebziFire named a TechBehemoths Global Excellence Award winner across Web Development, UX/UI Design, and Platform Engineering.
+                From fast-growing startups to enterprise businesses, we build digital products that launch on schedule and deliver real commercial results.
               </p>
             </div>
           </div>

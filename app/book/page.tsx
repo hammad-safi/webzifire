@@ -14,10 +14,10 @@ export default function BookPage({
   searchParams?: { service?: string };
 }) {
   const steps = [
-    { num: "01", title: "Practice Scope", desc: "Select required disciplines" },
-    { num: "02", title: "Timeline & Tier", desc: "Estimate sprint investment" },
-    { num: "03", title: "Commercial Brief", desc: "Share project parameters" },
-    { num: "04", title: "Senior Review", desc: "Structured scope in 24 hours" },
+    { num: "01", title: "Select Services", desc: "Choose what you need" },
+    { num: "02", title: "Timeline & Budget", desc: "Estimated delivery & investment" },
+    { num: "03", title: "Project Details", desc: "Share what you want to build" },
+    { num: "04", title: "Fast Review", desc: "Detailed proposal in 24 hours" },
   ];
 
   return (
@@ -26,17 +26,17 @@ export default function BookPage({
 
       <main className="w-full pt-20 pb-20">
         <PageHero
-          badge="Book an Architectural Sprint · 2026"
-          eyebrow="Sprint Consultation · Architectural Onboarding · 24h SLA"
-          titleNormal="Turn the next idea into a"
-          titleItalic="clear next step."
-          description="Choose the engineering scope that fits, configure your target investment tier, and tell us enough to make the initial architectural review actionable."
+          badge="Start Your Project · Fast 24h Response"
+          eyebrow="PROJECT ESTIMATE · STRATEGY SESSION · DEDICATED TEAM"
+          titleNormal="Turn your idea into a"
+          titleItalic="launched product."
+          description="Tell us about what you want to build. We will review your goals and provide a clear plan, fixed timeline, and transparent estimate within 24 hours."
           primaryCta={{
-            label: "Configure Project Scope",
+            label: "Start Scoping",
             href: "#scoping-app",
           }}
           secondaryCta={{
-            label: "Explore Capabilities",
+            label: "View Our Services",
             href: "/services",
           }}
         >

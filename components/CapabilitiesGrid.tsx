@@ -30,13 +30,13 @@ export default function CapabilitiesGrid() {
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#140A0C] border border-[#2C181B] w-fit">
               <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A] animate-pulse" />
               <span className="font-mono text-xs uppercase tracking-widest text-[#8A8175] font-semibold">
-                Connected Capabilities
+                What We Do
               </span>
             </div>
             <h2 className="font-display font-light text-3xl sm:text-5xl lg:text-[3.5rem] text-[#F5EFE6] tracking-tight leading-[1.04]">
-              Twelve Core Practices.<br />
+              Twelve Core Services.<br />
               <span className="display-italic font-normal text-[#C4B5A5]">
-                One Unified Engine.
+                One Dedicated Team.
               </span>
             </h2>
           </div>
@@ -44,13 +44,13 @@ export default function CapabilitiesGrid() {
           {/* Right Lead + Legend Badge */}
           <div className="lg:col-span-5 flex flex-col gap-5 justify-between">
             <p className="font-sans text-sm sm:text-base text-[#C4B5A5]/80 leading-relaxed">
-              Deploy a dedicated technical strike team for a mission-critical release, or orchestrate an end-to-end multi-tenant platform. Strategy, creative, technology and compounding growth stay aligned from the first architectural decision through deployment.
+              From modern business websites to custom software, mobile apps, and smart AI tools, we handle everything under one roof. Clean design, solid engineering, and friendly support from start to finish.
             </p>
             <div className="flex items-center gap-3.5 pt-4 border-t border-[#2C181B] text-xs font-mono uppercase tracking-[0.16em] text-[#8A8175]">
               <span className="w-8 h-8 rounded-full border border-[#D6334A]/50 text-[#D6334A] flex items-center justify-center font-bold text-xs shrink-0">
                 12
               </span>
-              <span>Distinct capabilities · zero duplicated disciplines</span>
+              <span>Full-stack services · Zero handoff confusion</span>
             </div>
           </div>
         </motion.div>

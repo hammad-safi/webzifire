@@ -82,7 +82,7 @@ export default function HeroSection() {
             className="lg:col-span-4 flex flex-col justify-between gap-6 lg:border-l border-white/10 lg:pl-8 lg:pb-2"
           >
             <p className="font-sans text-sm sm:text-base text-[#D8CFC2] leading-relaxed">
-              WebziFire connects positioning, bespoke web engineering, ecommerce, search, and autonomous AI systems around one senior-led brief. The result is clearer ownership, fewer handoffs, and digital work that compounds after launch.
+              We design and build fast websites, custom web apps, and smart AI tools for growing businesses. You work directly with experienced senior creators—getting clean code, rapid delivery, and measurable growth.
             </p>
 
             <div className="flex flex-col sm:flex-row lg:flex-col items-start gap-4 pt-2">
@@ -101,7 +101,7 @@ export default function HeroSection() {
                 href="/about"
                 className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-[#8A8175] hover:text-[#F5EFE6] transition-colors py-1 group"
               >
-                <span>Explore the Studio</span>
+                <span>About Our Studio</span>
                 <span className="text-[#D6334A] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">↗</span>
               </a>
             </div>
@@ -132,7 +132,7 @@ export default function HeroSection() {
                 <AnimatedCounter value={12} />
               </span>
               <span className="font-mono text-[11px] text-[#8A8175] uppercase tracking-widest mt-1">
-                Connected Services
+                Core Services
               </span>
             </div>
 
@@ -142,17 +142,17 @@ export default function HeroSection() {
                 <AnimatedCounter value={12} suffix="+" />
               </span>
               <span className="font-mono text-[11px] text-[#8A8175] uppercase tracking-widest mt-1">
-                Team Specialists
+                Senior Specialists
               </span>
             </div>
 
             {/* Stat 4 */}
             <div className="flex flex-col md:pl-6 pt-2 md:pt-0">
               <span className="font-display text-3xl lg:text-4xl text-[#D6334A] font-normal tracking-tight">
-                <AnimatedCounter value={3} />
+                <AnimatedCounter value={80} suffix="+" />
               </span>
               <span className="font-mono text-[11px] text-[#8A8175] uppercase tracking-widest mt-1">
-                International Awards
+                Delivered Projects
               </span>
             </div>
           </div>

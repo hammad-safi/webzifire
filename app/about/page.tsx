@@ -12,104 +12,104 @@ export default function AboutPage() {
   const habits = [
     {
       num: "01",
-      title: "Begin with the commercial problem",
-      text: "Every project begins with hard commercial realities, not a predetermined template. We define measurable KPIs, system constraints, and conversion standards before writing a single line of code.",
+      title: "Solve real business problems",
+      text: "We don't use cookie-cutter templates. We take the time to understand your customers, goals, and budget before writing a single line of code.",
     },
     {
       num: "02",
-      title: "Connect design to deep engineering",
-      text: "No speculative mockups that collapse in production. Principal designers and software architects collaborate in tandem so bespoke typography, obsidian aesthetics, and sub-second performance operate in lockstep.",
+      title: "Design that actually works",
+      text: "Our designers and developers work side-by-side. Every design is built to load instantly, work smoothly on mobile, and look stunning on any screen.",
     },
     {
       num: "03",
-      title: "Make architectural progress visible",
-      text: "Continuous client preview staging, live telemetry dashboards, and direct access to senior engineers. No account managers or communication silos.",
+      title: "Total transparency & direct access",
+      text: "You get direct access to the senior engineers building your product. Weekly progress previews, open communication, and zero middleman runarounds.",
     },
     {
       num: "04",
-      title: "Measure & compound after launch",
-      text: "Deployment is day zero of scaling. We monitor real user sessions, Core Web Vitals, organic search indexing, and automated AI workflows to compound platform value.",
+      title: "Continuous support after launch",
+      text: "Launching your project is just the beginning. We provide complete warranty support, monitor performance, and help you scale your digital business over time.",
     },
   ];
 
   const standards = [
     {
       key: "01",
-      label: "Briefing",
-      value: "One accountable brief with zero speculative guessing",
+      label: "Communication",
+      value: "Direct access to senior developers with weekly progress updates",
     },
     {
       key: "02",
-      label: "Staffing",
+      label: "Team Quality",
       value: "Senior-led execution with zero junior pass-through layers",
     },
     {
       key: "03",
-      label: "Intellectual Property",
-      value: "100% client code and IP assignment upon milestone completion",
+      label: "Code Ownership",
+      value: "100% intellectual property and full code ownership belongs to you",
     },
     {
       key: "04",
-      label: "Performance Benchmark",
-      value: "Sub-second Next.js speeds and 99.99% infrastructure uptime",
+      label: "Speed Standard",
+      value: "Sub-second load times and 99.9% uptime reliability",
     },
     {
       key: "05",
       label: "Post-Launch Warranty",
-      value: "30-day comprehensive technical warranty and telemetry observation",
+      value: "30-day post-launch warranty with dedicated technical support",
     },
   ];
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
       <main className="w-full pt-20 pb-20">
-        {/* Route Hero Matching Signature Hero Layout & Red Atmosphere */}
+        {/* Route Hero with Clear, Approachable Copy */}
         <PageHero
-          badge="The Studio Manifesto · Est. 2023"
-          eyebrow="PURPOSE · PRINCIPLES · SENIOR LEADERSHIP · DELIVERY"
-          titleNormal="Built to Connect."
-          titleItalic="What Agencies Keep Apart."
-          description="Traditional agencies fracture work between strategy, design, and offshore code factories. WebziFire engineers copy, visual systems, cloud architecture, and growth telemetry as one interconnected engine."
+          badge="About WebziFire · Founded 2023"
+          eyebrow="OUR MISSION · PRINCIPLES · LEADERSHIP · RESULTS"
+          titleNormal="Built for Clarity."
+          titleItalic="Crafted for Performance."
+          description="Traditional agencies pass your project between junior middlemen and offshore code shops. At WebziFire, you work directly with senior creators who design, build, and support your digital products from day one."
           primaryCta={{
-            label: "Start an Engagement",
+            label: "Start a Project",
             href: "/book",
           }}
           secondaryCta={{
-            label: "View Selected Work",
+            label: "View Our Work",
             href: "/work",
           }}
         />
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col gap-20 pt-12">
 
-          {/* Section 2: The Core Story (Split 12-Column Layout) */}
+          {/* Section 2: The Core Story */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start border-b border-[#2C181B] pb-16">
             <div className="lg:col-span-5 flex flex-col gap-4">
               <span className="font-mono text-xs uppercase tracking-widest text-[#D6334A] font-semibold">
                 Why We Exist
               </span>
               <h2 className="font-display font-light text-3xl sm:text-4xl text-[#F5EFE6] leading-snug">
-                A connected studio for software that has to perform.
+                A modern studio for digital products that need to perform.
               </h2>
             </div>
             <div className="lg:col-span-7 flex flex-col gap-6 font-sans text-base text-[#C4B5A5] leading-relaxed">
               <p>
-                Founded in 2023, WebziFire began with a single dissatisfaction: modern organizations were spending fortunes on beautifully designed interfaces that broke under real operational load, or technical systems with impenetrable, outdated UX.
+                Founded in 2023, WebziFire began with a simple observation: too many companies were spending fortunes on flashy websites that were slow and buggy, or clunky technical tools that nobody enjoyed using.
               </p>
               <p>
-                We built WebziFire to bridge this chasm. By uniting senior software architects, editorial product designers, and performance engineers under one roof, we eliminate pass-through handoffs and deliver compounding digital assets that withstand rigorous enterprise demands.
+                We built WebziFire to change that. By uniting senior developers, thoughtful designers, and AI specialists into one dedicated team, we eliminate miscommunication and build fast, reliable websites and software that help our clients grow.
               </p>
             </div>
           </section>
 
-          {/* Section 3: Operating Habits (.about-operating bento grid) */}
+          {/* Section 3: Operating Habits */}
           <section className="flex flex-col gap-10 border-b border-[#2C181B] pb-16">
             <div className="flex flex-col gap-3 max-w-2xl">
               <span className="font-mono text-xs uppercase tracking-widest text-[#D6334A] font-semibold">
-                Operating Protocol
+                Our Principles
               </span>
               <h2 className="font-display font-light text-3xl sm:text-4xl text-[#F5EFE6]">
-                Four habits that keep complex work clear.
+                Four principles that keep complex work clear.
               </h2>
             </div>
 

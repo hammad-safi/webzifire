@@ -12,65 +12,65 @@ export default function ProcessTimeline() {
     {
       num: "01",
       codefierLabel: "Discover",
-      title: "Discovery & Audit",
+      title: "Discovery & Planning",
       icon: Compass,
       summary:
-        "Clarify the audience, offer, commercial KPIs, architectural constraints, and evidence of success.",
+        "Understand your business goals, target audience, and project requirements.",
       detail:
-        "We dissect existing analytics, interview primary stakeholders, audit competitors, and formalize precise conversion benchmarks. No speculative guessing; we anchor the project in hard commercial realities.",
+        "We learn about your customers, review your competitors, and define clear success metrics. No technical jargon—just a clear, transparent plan to reach your business goals.",
       deliverables: [
-        "Commercial Goal Charter",
-        "User Persona Synthesis",
-        "Technical Constraint Audit",
-        "KPI Telemetry Framework",
+        "Project Roadmap & Timeline",
+        "Audience & Competitor Review",
+        "Technical Scope & Budget",
+        "Clear Success Milestones",
       ],
     },
     {
       num: "02",
       codefierLabel: "Define",
-      title: "Systems Design",
+      title: "Design & Blueprint",
       icon: FileCode2,
       summary:
-        "Shape the message, customer journey, content structure, technical scope, and measurement plan.",
+        "Design the user experience, page layouts, visual style, and system structure.",
       detail:
-        "Translating discovery into an ironclad blueprint. We create wireframes, editorial message hierarchies, system architecture diagrams, database schemas, and API dependency contracts.",
+        "We turn requirements into clickable prototypes and custom designs. You see exactly how your website or software will look and function before development begins.",
       deliverables: [
-        "Information Architecture",
-        "Wireframe Prototypes",
-        "Technical Specification (OpenAPI)",
-        "Telemetry & Event Map",
+        "Interactive Wireframes",
+        "Custom Visual Designs",
+        "System Architecture Blueprint",
+        "Content & Brand Guide",
       ],
     },
     {
       num: "03",
       codefierLabel: "Build",
-      title: "Sprint Engineering",
+      title: "Development & Testing",
       icon: Cpu,
       summary:
-        "Create the copy, design, and technology as one connected system, with senior review throughout.",
+        "Build your project using fast, modern technologies with regular weekly previews.",
       detail:
-        "Sprint execution led by principal engineers. Frontends built in Next.js with sub-second speeds, robust microservices, rigorous unit/integration test coverage, and continuous client preview staging.",
+        "Senior engineers build your site or application with clean, reliable code. We provide staging links so you can test features and give feedback as we build.",
       deliverables: [
-        "Full-fidelity Obsidian UI",
-        "Clean Next.js Codebase",
-        "Headless CMS & API Integration",
-        "Security & Load Audits",
+        "Production-Ready Next.js App",
+        "Mobile & Tablet Responsiveness",
+        "Database & API Connections",
+        "Speed, SEO & Security Testing",
       ],
     },
     {
       num: "04",
       codefierLabel: "Improve",
-      title: "Scale & Compound",
+      title: "Launch & Growth",
       icon: LineChart,
       summary:
-        "Launch, measure real behavior, and refine the experience using search, telemetry, and analytics.",
+        "Launch smoothly, track real user results, and continue scaling your product.",
       detail:
-        "Deployment is day zero of growth. We monitor user heatmaps, Core Web Vitals telemetry, organic search indexing, and run iterative conversion rate optimization experiments.",
+        "We launch your project with zero downtime, configure Google search indexing, and monitor performance. We provide post-launch support to help your business grow.",
       deliverables: [
-        "Zero-downtime Deployment",
-        "Real-time Telemetry Dashboard",
-        "SEO & Schema Indexation",
-        "Iterative Growth Roadmap",
+        "Smooth Production Launch",
+        "Google SEO & Analytics Setup",
+        "30-Day Post-Launch Warranty",
+        "Continuous Growth Support",
       ],
     },
   ];

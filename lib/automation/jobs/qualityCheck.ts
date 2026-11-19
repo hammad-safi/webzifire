@@ -184,7 +184,7 @@ CTA: ${article.cta_heading} — ${article.cta_description}
 Evaluate across:
 1. Originality & depth (no generic AI cliches or fluff)
 2. Technical & factual accuracy (no fabricated studies, accurate software architecture claims)
-3. Grammar, clarity, and executive readability
+3. Grammar, conversational clarity, and plain-English readability (accessible to any business owner; penalize dense academic jargon or robotic filler)
 4. Relevance to international B2B clients looking for WebziFire services
 5. Natural CTA & SEO structure
 

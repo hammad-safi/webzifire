@@ -11,19 +11,19 @@ export default function WorkPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
       <main className="w-full pt-20">
-        {/* Route Hero Matching Signature Hero Layout & Red Atmosphere */}
+        {/* Route Hero with Clear, Engaging Copy */}
         <PageHero
-          badge="Verified Client Outcomes · Case Studies"
-          eyebrow="PORTFOLIO · SAAS PLATFORMS · COMMERCE · APPLIED AI"
-          titleNormal="Work that makes."
-          titleItalic="The Capability Visible."
-          description="Explore production engagements delivered for high-growth enterprises and industry disruptors across enterprise SaaS, mobile commerce, automated AI agents, and POS/ERP suites."
+          badge="Selected Projects &amp; Case Studies"
+          eyebrow="PORTFOLIO · WEBSITES · APPS · AI TOOLS · COMMERCE"
+          titleNormal="Real Work."
+          titleItalic="Real Results for Growing Businesses."
+          description="Explore custom software, mobile apps, and high-performing websites built and launched by WebziFire for businesses worldwide."
           primaryCta={{
-            label: "Explore Case Studies",
+            label: "View Projects",
             href: "#selected-work",
           }}
           secondaryCta={{
-            label: "Book an Architectural Sprint",
+            label: "Start a Project",
             href: "/book",
           }}
         />

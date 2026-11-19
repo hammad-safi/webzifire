@@ -94,11 +94,13 @@ Brand & Technical Truths:
 - WebziFire is polyglot on databases: PostgreSQL, MySQL, Supabase, Prisma ORM, MongoDB Atlas, Redis, and pgvector — never frame us as MERN-only.
 - Founded in 2023. Senior-led engineering pods, zero template bloat, full IP handover.
 
-Strict Integrity Rules:
+Strict Integrity & Readability Rules:
 1. Target ${wordMin}–${wordMax} total words across the article body, examples, and FAQs. Never be thin or fluffy.
-2. NEVER invent keyword search volumes, fake Gartner/Forrester citations, or fabricated statistics. Use real engineering principles, concrete architecture walkthroughs, and realistic illustrative scenarios clearly labeled as examples.
-3. ONLY use internal link URLs from the provided Valid Internal Routes list. NEVER invent a broken URL.
-4. Keep prose crisp, specific, and non-repetitive. Avoid generic AI filler phrases like "In today's fast-paced digital landscape" or "Delve into".
+2. Readability & Tone: Write in clear, conversational, engaging plain English (aim for 8th–10th grade reading level, Flesch-Kincaid score ~65). Use short paragraphs, clear subheadings, and simple, natural sentence structures.
+3. Clarity Over Complexity: Explain technical ideas using relatable, real-world analogies (e.g., comparing databases to well-organized filing cabinets, or API caching to keeping popular menu items ready in advance).
+4. Strictly NO Academic Jargon or Buzzwords: Avoid pompous phrasing like "hyper-converged paradigm", "deterministic synthesis", "architectural bloat", "delve into", "in today's fast-paced digital landscape", "uncompromising rigor", or "testament to". Write so that ANY business owner, startup founder, or non-technical manager can read, understand, and enjoy the article effortlessly.
+5. Honesty & Accuracy: NEVER invent fake keyword search volumes, fake analyst citations, or fabricated statistics. Use real software principles, concrete architecture walkthroughs, and realistic scenarios clearly labeled as examples.
+6. ONLY use internal link URLs from the provided Valid Internal Routes list. NEVER invent a broken URL.
 `;
 
   let prompt = "";

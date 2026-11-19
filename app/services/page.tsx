@@ -12,19 +12,19 @@ export default function ServicesPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
       <main className="w-full pt-20">
-        {/* Route Hero Matching Signature Hero Layout & Red Atmosphere */}
+        {/* Route Hero with Clear, Engaging Copy */}
         <PageHero
-          badge="Complete Practice · 12 Disciplines"
-          eyebrow="STRATEGY · ARCHITECTURE · ENGINEERING · SCALE"
-          titleNormal="Twelve Disciplines."
-          titleItalic="Engineered for Compounding Scale."
-          description="Explore WebziFire's full suite of enterprise engineering and digital growth services. Every discipline functions as an autonomous capability or as part of an integrated, compounding software engine."
+          badge="Full-Stack Capabilities · 12 Services"
+          eyebrow="WEB · MOBILE · SOFTWARE · AI · GROWTH"
+          titleNormal="Twelve Core Services."
+          titleItalic="Built to Help Your Business Grow."
+          description="Explore WebziFire's complete range of web design, custom software, and smart AI automation services. Use what you need today, or combine them to launch your next big product."
           primaryCta={{
-            label: "Explore Capabilities",
+            label: "View All Services",
             href: "#capabilities",
           }}
           secondaryCta={{
-            label: "Book a Project Sprint",
+            label: "Start a Project",
             href: "/book",
           }}
         />

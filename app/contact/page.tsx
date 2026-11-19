@@ -17,31 +17,31 @@ export default function ContactPage({
     {
       key: "A.",
       label: "Delivery Model",
-      value: "Worldwide Remote Engineering / Synchronous Time Zone Coverage (US, UK, EMEA)",
+      value: "Worldwide Remote Engineering / Flexible coverage across US, UK, Europe & UAE time zones",
       link: null,
     },
     {
       key: "B.",
-      label: "Direct Inquiries",
+      label: "Direct Email",
       value: "inquire@webzifire.com",
       link: "mailto:inquire@webzifire.com",
     },
     {
       key: "C.",
-      label: "Telephone & WhatsApp",
+      label: "Phone & WhatsApp",
       value: "+92 314 5660928",
-      link: "https://wa.me/923145660928?text=Hello%20WebziFire!%20I%20would%20like%20to%20discuss%20an%20enterprise%20project.",
+      link: "https://wa.me/923145660928?text=Hello%20WebziFire!%20I%20would%20like%20to%20discuss%20a%20project.",
     },
     {
       key: "D.",
       label: "Confidentiality",
-      value: "Standard Mutual NDA Protection Enforced on all briefs",
+      value: "100% Confidential / Mutual NDA protection on every project",
       link: null,
     },
     {
       key: "E.",
-      label: "Response Benchmark",
-      value: "Technical review by Principal Engineers within 24 hours",
+      label: "Response Time",
+      value: "Personal review and reply from our senior team within 24 hours",
       link: null,
     },
   ];
@@ -49,20 +49,20 @@ export default function ContactPage({
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
       <main className="w-full pt-20 pb-20">
-        {/* Route Hero Matching Signature Hero Layout & Red Atmosphere */}
+        {/* Route Hero with Clear, Friendly Copy */}
         <PageHero
-          badge="Direct Engagement Desk · 24h SLA"
-          eyebrow="DIRECT INQUIRIES · SYNCHRONOUS US & EMEA TIMEZONES"
-          titleNormal="Tell us what"
-          titleItalic="You are building."
-          description="Share the business problem, target milestones, and key technical constraints. We will review compatibility and reply with a practical scope of work within 24 hours."
+          badge="Get In Touch · 24h Response"
+          eyebrow="DIRECT INQUIRIES · US, UK, EUROPE & UAE TIME ZONES"
+          titleNormal="Tell us about"
+          titleItalic="what you are building."
+          description="Tell us about your project, goals, and timeline. Our senior team will review your requirements and reply with a clear plan and estimate within 24 hours."
           primaryCta={{
-            label: "Submit Project Brief",
+            label: "Send a Message",
             href: "#contact-form-section",
           }}
           secondaryCta={{
-            label: "Direct WhatsApp Line",
-            href: "https://wa.me/923145660928?text=Hello%20WebziFire!%20I%20would%20like%20to%20discuss%20an%20enterprise%20project.",
+            label: "Chat on WhatsApp",
+            href: "https://wa.me/923145660928?text=Hello%20WebziFire!%20I%20would%20like%20to%20discuss%20a%20project.",
           }}
         />
 

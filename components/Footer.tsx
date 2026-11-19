@@ -26,7 +26,7 @@ export default function Footer() {
             </div>
 
             <p className="font-sans text-sm text-[#C4B5A5]/80 leading-relaxed max-w-md">
-              <strong className="text-[#F5EFE6] font-medium">Igniting ideas through technology.</strong> Engineering high-conviction digital products, scalable enterprise web engines, and transformative brand identities for visionary leaders globally.
+              <strong className="text-[#F5EFE6] font-medium">Igniting ideas through technology.</strong> Designing and building fast websites, custom software, and smart AI tools for growing businesses worldwide.
             </p>
 
             <div className="flex flex-col gap-2 pt-2">
@@ -49,10 +49,10 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 2: Core Disciplines */}
+          {/* Column 2: Our Services */}
           <div className="lg:col-span-3 flex flex-col gap-3">
             <span className="font-mono text-xs uppercase tracking-wider text-[#8A8175] font-semibold">
-              Core Disciplines
+              Our Services
             </span>
             <ul className="flex flex-col gap-2 pt-1 font-sans text-sm text-[#C4B5A5]/80">
               <li className="hover:text-[#F5EFE6] transition-colors">
