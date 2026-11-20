@@ -90,11 +90,49 @@ export default function PortfolioSection() {
           </p>
         </div>
 
-        {/* Category Filter Tabs (1px hairline bento grid) */}
+        {/* Mobile Filter Tabs (Horizontal Scrollable Rail - 100% responsive, no text clipping) */}
         <div
           role="tablist"
-          aria-label="Portfolio categories"
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-[1px] p-[1px] bg-[#2C181B] rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
+          aria-label="Portfolio categories mobile rail"
+          className="flex md:hidden overflow-x-auto no-scrollbar gap-2 p-1.5 bg-[#140A0C] border border-[#2C181B] rounded-2xl scroll-smooth"
+        >
+          {tabsWithCounts.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveTab(tab.id)}
+                className={`shrink-0 flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-mono text-xs transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? "bg-[#D6334A] text-white font-semibold shadow-[0_2px_14px_rgba(214,51,74,0.45)]"
+                    : "bg-[#1B0E10] text-[#8A8175] hover:text-[#F5EFE6] hover:border-[#D6334A]/40 border border-[#2C181B]"
+                }`}
+              >
+                <span className={isActive ? "text-white/80" : "text-[#D6334A] font-bold"}>
+                  {tab.num}
+                </span>
+                <span className="font-sans font-medium">{tab.label}</span>
+                {tab.important && <span className="text-[10px] text-amber-300">★</span>}
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                    isActive ? "bg-black/30 text-white" : "bg-[#25181A] text-[#C4B5A5]"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Category Filter Tabs (1px hairline bento grid for md & above) */}
+        <div
+          role="tablist"
+          aria-label="Portfolio categories desktop grid"
+          className="hidden md:grid md:grid-cols-4 xl:grid-cols-7 gap-[1px] p-[1px] bg-[#2C181B] rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
         >
           {tabsWithCounts.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -475,7 +513,7 @@ export default function PortfolioSection() {
                 onClick={() => setSelectedProject(null)}
                 className="w-full sm:w-auto font-mono font-semibold text-xs uppercase tracking-wider text-[#F5EFE6] bg-[#D6334A] hover:bg-[#E03A52] px-6 py-3.5 rounded-full shadow-[0_4px_20px_rgba(214,51,74,0.35)] text-center transition-all flex items-center justify-center gap-2"
               >
-                <span>Inquire for Similar Project</span>
+                <span>Inquire for {selectedProject.title}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
             </div>

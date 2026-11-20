@@ -236,7 +236,7 @@ export default function CaseStudyDetailPage({
                     href={`/contact?service=${encodeURIComponent(project.relatedServiceName)}`}
                     className="w-full group inline-flex items-center justify-between px-6 py-3.5 rounded-full bg-[#D6334A] hover:bg-[#E03A52] text-[#F5EFE6] font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-300 shadow-[0_4px_20px_rgba(214,51,74,0.35)] hover:-translate-y-0.5"
                   >
-                    <span>Build Similar Experience</span>
+                    <span>Inquire for {project.title}</span>
                     <span className="w-7 h-7 rounded-full bg-black/20 flex items-center justify-center group-hover:translate-x-1 transition-transform shrink-0">
                       <ArrowRight className="w-3.5 h-3.5 text-white" />
                     </span>

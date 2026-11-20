@@ -308,7 +308,7 @@ export default function CapabilitiesGrid() {
                   onClick={() => setSelectedService(null)}
                   className="w-full sm:w-auto font-mono font-semibold text-xs uppercase tracking-wider text-[#F5EFE6] bg-[#D6334A] hover:bg-[#E03A52] px-6 py-3 rounded-full shadow-[0_4px_20px_rgba(214,51,74,0.35)] transition-all text-center flex items-center justify-center gap-2"
                 >
-                  <span>Inquire About This Service</span>
+                  <span>Inquire for {selectedService.title}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </a>
               </div>

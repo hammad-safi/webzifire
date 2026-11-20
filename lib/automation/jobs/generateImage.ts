@@ -21,6 +21,8 @@ export async function runGenerateAndStoreFeaturedImage(params: {
 
   const { buffer, mimeType, modelUsed } = await callGeminiImageGen({
     prompt,
+    title: params.title,
+    slug: params.slug,
     articleId: params.articleId,
     servicePillar: params.servicePillar,
   });

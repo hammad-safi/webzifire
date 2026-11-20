@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck, Clock, AlertCircle } from "lucide-react";
 
 interface ContactFormProps {
@@ -21,6 +21,17 @@ export default function ContactForm({
     budget: "",
     message: "",
   });
+
+  useEffect(() => {
+    if (defaultService) {
+      setFormData((prev) => ({ ...prev, service: defaultService }));
+    } else if (typeof window !== "undefined") {
+      const paramService = new URLSearchParams(window.location.search).get("service");
+      if (paramService) {
+        setFormData((prev) => ({ ...prev, service: paramService }));
+      }
+    }
+  }, [defaultService]);
 
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [responseMessage, setResponseMessage] = useState<string>("");
@@ -219,8 +230,8 @@ export default function ContactForm({
               />
             </label>
 
-            {/* Field 5: Service / Project Type (Manual text input) */}
-            <label className="flex flex-col gap-2 p-5 sm:p-6 sm:border-r border-b sm:border-b-0 border-[#2C181B] cursor-text hover:bg-[#1B0E10]/40 transition-colors">
+            {/* Field 5: Service / Project Type (Manual text input + Quick Buttons) */}
+            <div className="flex flex-col gap-2 p-5 sm:p-6 sm:border-r border-b sm:border-b-0 border-[#2C181B] hover:bg-[#1B0E10]/40 transition-colors">
               <span className="font-mono text-[11px] uppercase tracking-[0.24em] text-[#8A8175]">
                 Service / Project Type
               </span>
@@ -230,10 +241,41 @@ export default function ContactForm({
                 autoComplete="off"
                 value={formData.service}
                 onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                placeholder="e.g. Web & SaaS, Mobile App, AI System"
+                placeholder="e.g. Website & Web Application Development"
                 className="w-full bg-transparent text-[#F5EFE6] font-sans text-base focus:outline-none placeholder:text-[#8A8175]/40"
               />
-            </label>
+              <div className="flex flex-wrap gap-1.5 pt-2">
+                {[
+                  "Website & Web Application Development",
+                  "Mobile Application Development",
+                  "ERP & Enterprise Software",
+                  "POS & Retail Systems",
+                  "SaaS Product Development",
+                  "E-Commerce Development",
+                  "Backend & APIs",
+                  "AI-Powered Application",
+                ].map((s) => {
+                  const isSelected =
+                    formData.service.toLowerCase() === s.toLowerCase() ||
+                    (formData.service.length > 5 &&
+                      s.toLowerCase().includes(formData.service.toLowerCase()));
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, service: s }))}
+                      className={`text-[10px] font-mono px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#D6334A] text-white border-[#D6334A] font-semibold shadow-sm"
+                          : "bg-[#140A0C] text-[#8A8175] border-[#2C181B] hover:border-[#D6334A]/50 hover:text-[#F5EFE6]"
+                      }`}
+                    >
+                      {s.split(" ")[0]} {s.split(" ")[1] || ""}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Field 6: Budget Range (Manual text input) */}
             <label className="flex flex-col gap-2 p-5 sm:p-6 cursor-text hover:bg-[#1B0E10]/40 transition-colors">
