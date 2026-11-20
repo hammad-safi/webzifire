@@ -6,6 +6,11 @@ import {
   callGeminiStructuredJson,
 } from "@/lib/automation/geminiClient";
 import { TopicResearchResult } from "@/lib/automation/types";
+import {
+  getAllExistingTargetKeywords,
+  checkKeywordCannibalization,
+  CannibalizationCheckResult,
+} from "@/lib/seo/keywordCannibalization";
 
 const SERVICE_PILLARS = [
   { pillar: "Website & Web Application Development", category: "Engineering Architecture", focus: "high-converting Next.js enterprise websites, corporate web portals, custom React applications, Core Web Vitals" },
@@ -50,7 +55,15 @@ export async function runTopicAndSeoResearch(options?: {
   preferredPillar?: string;
 }): Promise<TopicResearchResult> {
   const admin = getSupabaseAdmin();
-  const { slugs, titles } = await getAllExistingSlugsAndTitles();
+  const [{ slugs, titles }, existingTargetKeywords] = await Promise.all([
+    getAllExistingSlugsAndTitles(),
+    getAllExistingTargetKeywords(),
+  ]);
+
+  const existingKeywordsList = existingTargetKeywords
+    .map((k) => `- "${k.primaryKeyword}" (Used in: ${k.title} -> /blog/${k.slug})`)
+    .slice(0, 40)
+    .join("\n");
 
   // Pull recent GSC opportunities / recommendations if any exist
   let seoOpportunityContext = "No Google Search Console data connected yet; prioritize high-intent international B2B buyer questions (US, UK, UAE/GCC, Europe).";
@@ -115,10 +128,15 @@ ${seoOpportunityContext}
 Existing article titles we MUST NOT duplicate or closely overlap:
 ${titles.map((t) => `- ${t}`).join("\n")}
 
+STRICT ANTI-KEYWORD CANNIBALIZATION GUARD:
+Existing primary keywords already targeted across WebziFire articles:
+${existingKeywordsList || "(No prior keywords recorded)"}
+DO NOT target, duplicate, or cannibalize any of the above keywords! You MUST select a completely fresh, distinct long-tail commercial or technical keyword angle.
+
 Task:
 1. Research current high-intent technical and commercial topics that international founders, CTOs, and operations leaders actively search for related to "${chosenPillar.pillar}" in 2026.
 2. Examine competing articles currently ranking for this angle and identify 4–5 concrete gaps they miss (e.g., real architecture trade-offs, PostgreSQL/MySQL/Supabase data modeling, total cost of ownership, security/compliance, realistic implementation phases).
-3. Recommend ONE sharp, authoritative, non-duplicate article topic with clear primary keyword, 5–7 semantically related secondary keywords, search intent, target SEO title, meta description, and 6–7 key outline sections.
+3. Recommend ONE sharp, authoritative, non-duplicate article topic with a fresh primary keyword that does NOT cannibalize our existing content, 5–7 semantically related secondary keywords, search intent, target SEO title, meta description, and 6–7 key outline sections.
 
 CRITICAL RULES:
 - NEVER invent, guess, or estimate monthly search volumes, keyword difficulty numbers, CPCs, or fake percentages.
@@ -145,13 +163,16 @@ ${JSON.stringify(grounded.sources)}
 Existing Slugs (your suggestedSlug MUST NOT match any of these):
 ${JSON.stringify(slugs)}
 
+Existing Primary Keywords (DO NOT TARGET THESE):
+${existingTargetKeywords.map((k) => k.primaryKeyword).slice(0, 30).join(", ")}
+
 Return ONLY valid JSON with this exact schema:
 {
   "topicTitle": "Compelling editorial H1 title (55-75 chars)",
   "servicePillar": "${chosenPillar.pillar}",
   "category": "${chosenPillar.category}",
   "targetRegion": "International (US, UK, UAE/GCC, Europe)",
-  "primaryKeyword": "exact primary target keyword phrase",
+  "primaryKeyword": "exact primary target keyword phrase (unique, non-cannibalizing)",
   "secondaryKeywords": ["5 to 7 natural semantic keywords"],
   "searchIntent": "commercial_informational | commercial_investigation | technical_evaluation",
   "competitorGaps": ["4 to 5 specific missing details in competing articles"],
@@ -183,6 +204,26 @@ Return ONLY valid JSON with this exact schema:
     maxOutputTokens: 2500,
   });
 
+  // Step 1C: Programmatic Keyword Cannibalization Verification
+  let candidateKeyword = structured.primaryKeyword;
+  let cannibalizationCheck: CannibalizationCheckResult = checkKeywordCannibalization(
+    candidateKeyword,
+    existingTargetKeywords
+  );
+
+  // If cannibalization is detected, adjust the primary keyword to differentiate the topic
+  if (cannibalizationCheck.isCannibalized && cannibalizationCheck.conflictingArticle) {
+    console.warn(
+      `[ResearchTopic] Cannibalization detected for "${candidateKeyword}" against "${cannibalizationCheck.conflictingArticle.title}". Adjusting angle.`
+    );
+    // Append architectural / industry differentiator based on service pillar
+    candidateKeyword = `${candidateKeyword} ${chosenPillar.category.toLowerCase().split(" ")[0]}`.trim();
+    cannibalizationCheck = checkKeywordCannibalization(
+      candidateKeyword,
+      existingTargetKeywords
+    );
+  }
+
   // Ensure slug uniqueness deterministically
   let cleanSlug = slugify(structured.suggestedSlug || structured.topicTitle);
   const existingSlugSet = new Set(slugs);
@@ -195,7 +236,7 @@ Return ONLY valid JSON with this exact schema:
 
   const fingerprint = normalizeFingerprint(structured.topicTitle) || cleanSlug;
 
-  // Persist into topic_research_queue
+  // Persist into topic_research_queue with cannibalization check metadata
   const { data: insertedTopic, error } = await admin
     .from("topic_research_queue")
     .upsert(
@@ -204,7 +245,7 @@ Return ONLY valid JSON with this exact schema:
         normalized_fingerprint: fingerprint,
         service_pillar: structured.servicePillar || chosenPillar.pillar,
         target_region: structured.targetRegion || "Global (US, UK, UAE, EU)",
-        primary_keyword: structured.primaryKeyword,
+        primary_keyword: candidateKeyword,
         secondary_keywords: structured.secondaryKeywords || [],
         search_intent: structured.searchIntent || "commercial_informational",
         competitor_gaps: structured.competitorGaps || [],
@@ -230,7 +271,7 @@ Return ONLY valid JSON with this exact schema:
     servicePillar: structured.servicePillar || chosenPillar.pillar,
     category: structured.category || chosenPillar.category,
     targetRegion: structured.targetRegion || "Global (US, UK, UAE, EU)",
-    primaryKeyword: structured.primaryKeyword,
+    primaryKeyword: candidateKeyword,
     secondaryKeywords: structured.secondaryKeywords || [],
     searchIntent: structured.searchIntent || "commercial_informational",
     competitorGaps: structured.competitorGaps || [],
@@ -239,5 +280,14 @@ Return ONLY valid JSON with this exact schema:
     seoMetaTitle: structured.seoMetaTitle,
     seoMetaDescription: structured.seoMetaDescription,
     outlinePoints: structured.outlinePoints || [],
+    cannibalizationCheck: {
+      isCannibalized: cannibalizationCheck.isCannibalized,
+      severity: cannibalizationCheck.severity,
+      similarity: cannibalizationCheck.similarity,
+      conflictingArticleTitle: cannibalizationCheck.conflictingArticle?.title,
+      conflictingSlug: cannibalizationCheck.conflictingArticle?.slug,
+      reason: cannibalizationCheck.reason,
+      suggestions: cannibalizationCheck.suggestions,
+    },
   };
 }

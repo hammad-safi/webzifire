@@ -1,13 +1,10 @@
 import React from "react";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Home, ShieldAlert } from "lucide-react";
 
 export default function NotFound() {
   return (
     <div className="flex flex-col min-h-screen bg-canvas-dark text-on-surface">
-      <Navbar />
-
       <main className="flex-1 flex items-center justify-center pt-28 pb-20 px-6">
         <div className="max-w-md w-full bg-surface-card rounded-3xl border border-border-subtle p-8 sm:p-10 text-center flex flex-col items-center gap-6 shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
           <div className="w-16 h-16 rounded-2xl bg-surface-elevated border border-primary-coral/40 flex items-center justify-center text-primary shadow-coral-sm">

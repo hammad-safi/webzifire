@@ -521,3 +521,168 @@ export async function sendPublishConfirmationEmail(params: {
     html,
   });
 }
+
+export interface ContentRefreshDigestParams {
+  analyses: Array<{
+    articleId: string;
+    slug: string;
+    title: string;
+    publishedAt: string;
+    ageDays: number;
+    impressions: number;
+    clicks: number;
+    ctr: number;
+    avgPosition: number;
+    healthVerdict: string;
+    keySignals: string[];
+    recommendations: Array<{
+      type: string;
+      priority: string;
+      title: string;
+      rationale: string;
+      suggestedAction: string;
+    }>;
+  }>;
+  recipientEmail?: string | null;
+}
+
+/**
+ * Capability 4: Sends the 30–60 Day Content Refresh Digest email to the founder.
+ * Reviews performance of older articles and provides non-destructive content refresh recommendations.
+ */
+export async function sendContentRefreshDigestEmail(
+  params: ContentRefreshDigestParams
+): Promise<{ messageId: string; to: string }> {
+  const to = getApprovalRecipientEmail(params.recipientEmail);
+  if (!to) {
+    throw new Error("ADMIN_APPROVAL_EMAIL is not configured.");
+  }
+
+  const baseUrl = getSiteBaseUrl();
+  const dashboardUrl = `${baseUrl}/admin/seo`;
+
+  const articlesHtml = params.analyses
+    .map((art) => {
+      const liveUrl = `${baseUrl}/blog/${encodeURIComponent(art.slug)}`;
+      const verdictColor =
+        art.healthVerdict === "healthy"
+          ? "#34d399"
+          : art.healthVerdict === "high_opportunity"
+          ? "#60a5fa"
+          : "#f59e0b";
+
+      const verdictLabel =
+        art.healthVerdict === "underperforming"
+          ? "⚠️ Underperforming (Low CTR)"
+          : art.healthVerdict === "outdated"
+          ? "⏳ Outdated Architecture Concepts"
+          : art.healthVerdict === "high_opportunity"
+          ? "🚀 High Search Opportunity"
+          : "✅ Healthy Baseline";
+
+      const recsHtml = art.recommendations
+        .map(
+          (r) => `
+        <div style="background-color:#1B0E10;border-left:3px solid #D6334A;border-radius:8px;padding:10px 14px;margin-top:10px;">
+          <div style="font-size:11px;font-weight:700;color:#D6334A;text-transform:uppercase;letter-spacing:1px;">
+            ${escapeHtml(r.priority)} Priority · ${escapeHtml(r.type.replace(/_/g, " "))}
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#F5EFE6;margin:4px 0 2px 0;">
+            ${escapeHtml(r.title)}
+          </div>
+          <div style="font-size:12px;color:#C4B5A5;line-height:1.5;">
+            ${escapeHtml(r.rationale)}
+          </div>
+          <div style="font-size:12px;color:#34d399;margin-top:4px;">
+            <strong>Action:</strong> ${escapeHtml(r.suggestedAction)}
+          </div>
+        </div>`
+        )
+        .join("");
+
+      return `
+      <div style="background-color:#0B0607;border:1px solid #2C181B;border-radius:14px;padding:18px 20px;margin-bottom:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:700;color:${verdictColor};text-transform:uppercase;letter-spacing:1px;">
+            ${escapeHtml(verdictLabel)}
+          </span>
+          <span style="font-size:11px;color:#8A8175;">
+            ${art.ageDays} days live
+          </span>
+        </div>
+        <h3 style="margin:4px 0 6px 0;font-size:17px;color:#F5EFE6;font-weight:600;">
+          <a href="${liveUrl}" style="color:#F5EFE6;text-decoration:none;">${escapeHtml(art.title)} ↗</a>
+        </h3>
+        <div style="font-size:12px;color:#8A8175;margin-bottom:12px;">
+          /blog/${escapeHtml(art.slug)} · 28d Google Impressions: <strong style="color:#D8CFC2;">${art.impressions}</strong> ·
+          Clicks: <strong style="color:#D8CFC2;">${art.clicks}</strong> ·
+          CTR: <strong style="color:#D8CFC2;">${(art.ctr * 100).toFixed(2)}%</strong>
+        </div>
+        <div style="font-size:12px;color:#C4B5A5;line-height:1.6;margin-bottom:10px;">
+          ${art.keySignals.map((s) => `• ${escapeHtml(s)}`).join("<br />")}
+        </div>
+        ${recsHtml}
+      </div>`;
+    })
+    .join("");
+
+  const underperformingCount = params.analyses.filter(
+    (a) => a.healthVerdict === "underperforming"
+  ).length;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background-color:#0B0607;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#F5EFE6;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#0B0607;padding:28px 14px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="680" cellspacing="0" cellpadding="0" style="max-width:680px;width:100%;background-color:#140A0C;border:1px solid #2C181B;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="padding:26px 28px;background:linear-gradient(135deg,#260B11 0%,#140A0C 70%);border-bottom:1px solid #2C181B;">
+              <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#D6334A;font-weight:700;">
+                ✦ WEBZIFIRE AUTONOMOUS SEO · CONTENT REFRESH ENGINE
+              </div>
+              <h1 style="margin:10px 0 6px 0;font-size:23px;line-height:1.3;color:#F5EFE6;font-weight:600;">
+                30–60 Day Content Refresh &amp; Audit Digest
+              </h1>
+              <div style="font-size:12px;color:#C4B5A5;">
+                Audited <strong style="color:#F5EFE6;">${params.analyses.length}</strong> published articles ·
+                <strong style="color:#f59e0b;">${underperformingCount}</strong> flagged for optimization
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:22px 28px;">
+              <p style="font-size:13px;color:#D8CFC2;line-height:1.6;margin:0 0 18px 0;">
+                Here is your scheduled 30–60 day content performance review. Every recommendation is grounded in real Google Search Console data and modern 2026 software engineering benchmarks:
+              </p>
+
+              ${articlesHtml || `<p style="color:#8A8175;font-size:13px;">No articles currently eligible for refresh audit.</p>`}
+
+              <div style="text-align:center;margin-top:24px;padding-top:18px;border-top:1px solid #2C181B;">
+                <a href="${dashboardUrl}" style="display:inline-block;padding:13px 28px;background-color:#D6334A;color:#FFFFFF;text-decoration:none;border-radius:999px;font-weight:700;font-size:13px;">
+                  Open SEO Dashboard &amp; Review Recommendations ↗
+                </a>
+              </div>
+              <div style="text-align:center;margin-top:12px;font-size:11px;color:#8A8175;">
+                WebziFire Autonomous SEO System · Non-destructive recommendations · Founder approval required for all updates.
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+  return dispatchEmail({
+    to,
+    subject: `[Content Refresh Audit] ${params.analyses.length} Articles Audited — WebziFire SEO`,
+    html,
+  });
+}

@@ -105,6 +105,17 @@ class PostgrestQueryBuilder implements PromiseLike<SupabaseResult<any>> {
     return this;
   }
 
+  lte(col: string, val: string | number): this {
+    this.filters.push({ col, op: "lte", val: String(val) });
+    return this;
+  }
+
+  in(col: string, vals: Array<string | number>): this {
+    const serialized = vals.map((v) => `"${String(v).replace(/"/g, '\\"')}"`).join(",");
+    this.filters.push({ col, op: "in", val: `(${serialized})` });
+    return this;
+  }
+
   order(
     col: string,
     options?: { ascending?: boolean; nullsFirst?: boolean }

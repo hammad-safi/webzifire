@@ -1,5 +1,4 @@
 import React from "react";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WebziFireBot from "@/components/WebziFireBot";
 import ContactForm from "@/components/ContactForm";
@@ -22,8 +21,6 @@ export default function BookPage({
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
-      <Navbar />
-
       <main className="w-full pt-20 pb-20">
         <PageHero
           badge="Start Your Project · Fast 24h Response"

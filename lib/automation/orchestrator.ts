@@ -9,6 +9,7 @@ import {
   sendArticleApprovalEmail,
   sendPublishConfirmationEmail,
 } from "@/lib/email/mailer";
+import { inspectArticleIndexing } from "@/lib/seo/googleMonitoring";
 import {
   AutomationSettings,
   JobType,
@@ -604,6 +605,31 @@ export async function publishApprovedArticle(
     .from("automation_settings")
     .update({ test_article_verified: true, updated_at: now })
     .eq("id", "default");
+
+  // Capability 3: Google Search Console post-publish tracking initiation
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    await admin.from("seo_performance_metrics").upsert(
+      {
+        article_id: publishedArticle.id,
+        article_slug: publishedArticle.slug,
+        metric_date: today,
+        impressions: 0,
+        clicks: 0,
+        ctr: 0,
+        avg_position: 0,
+        top_queries: [],
+        indexing_status: "submitted",
+      },
+      { onConflict: "article_slug,metric_date" }
+    );
+    // Non-blocking Google Search Console inspection query
+    inspectArticleIndexing(publishedArticle.slug).catch((err) =>
+      console.warn("[Orchestrator] Post-publish GSC inspection ping failed:", err)
+    );
+  } catch (gscErr) {
+    console.warn("[Orchestrator] Failed creating initial GSC metric row:", gscErr);
+  }
 
   // Send publish confirmation email
   let confirmationSent = false;

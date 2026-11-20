@@ -1,5 +1,6 @@
 import { callGeminiStructuredJson } from "@/lib/automation/geminiClient";
 import { getValidInternalRoutes } from "@/lib/automation/jobs/writeArticle";
+import { runFactAndSourceVerification } from "@/lib/automation/jobs/factVerification";
 import {
   AutomationSettings,
   JournalArticleRecord,
@@ -165,7 +166,31 @@ export async function runQualityCheck(params: {
     );
   }
 
-  // 8. Independent Gemini Editorial, Originality, Accuracy & Readability Critic
+  // 8. Capability 2: Source & Technical Fact Verification
+  const factReport = await runFactAndSourceVerification({
+    title: article.title,
+    summary: article.summary,
+    contentBlocks: blocks,
+    internalLinks,
+    researchSources: article.research_sources,
+    articleId: article.id,
+  });
+
+  checks.push({
+    name: "Source & Technical Fact Verification",
+    passed: factReport.overallPassed,
+    details: factReport.overallPassed
+      ? `Factual score: ${factReport.factualScore}/100 — no fabricated claims`
+      : `Flagged ${factReport.violations.length} factual/source violations`,
+  });
+
+  if (!factReport.overallPassed) {
+    for (const v of factReport.violations) {
+      revisionInstructions.push(`${v.reason} (${v.suggestedFix})`);
+    }
+  }
+
+  // 9. Independent Gemini Editorial, Originality, Accuracy & Readability Critic
   const auditPrompt = `
 You are a strict Senior Technical Editor and SEO Quality Auditor for WebziFire.
 Evaluate this draft article rigorously before it is emailed to the founder for approval.
@@ -237,16 +262,23 @@ Return ONLY valid JSON:
     revisionInstructions.push(...critic.issues);
   }
 
-  // Compute composite score combining deterministic pass ratio + Gemini critic score
+  // Compute composite score combining deterministic pass ratio + Gemini critic score + fact verification score
   const hardChecksPassedCount = checks.filter((c) => c.passed).length;
   const deterministicScore = Math.round((hardChecksPassedCount / checks.length) * 100);
   const overallScore = Math.round(
-    deterministicScore * 0.45 + Number(critic.editorialScore || 80) * 0.55
+    deterministicScore * 0.35 +
+    Number(critic.editorialScore || 80) * 0.35 +
+    Number(factReport.factualScore || 85) * 0.30
   );
 
   const minScore = settings.min_quality_score || 85;
   const criticalHardFail =
-    !wordCountOk || !hasFeaturedImage || !linksOk || hasInventedStats || !faqOk;
+    !wordCountOk ||
+    !hasFeaturedImage ||
+    !linksOk ||
+    hasInventedStats ||
+    !faqOk ||
+    !factReport.overallPassed;
 
   const passed = overallScore >= minScore && !criticalHardFail;
 
@@ -261,10 +293,18 @@ Return ONLY valid JSON:
     hasAltText,
     hasFeaturedImage,
     hasInventedStats,
+    factVerificationPassed: factReport.overallPassed,
+    factualScore: factReport.factualScore,
+    factViolations: factReport.violations.map((v) => ({
+      category: v.category,
+      claimText: v.claimText,
+      reason: v.reason,
+    })),
     checks,
     editorSummary:
       critic.editorSummary ||
-      "Automated SEO, structural, and editorial review completed.",
+      factReport.summary ||
+      "Automated SEO, structural, fact, and editorial review completed.",
     revisionInstructions: passed ? [] : revisionInstructions,
     checkedAt: new Date().toISOString(),
   };

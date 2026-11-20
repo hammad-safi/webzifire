@@ -129,10 +129,18 @@ select:autofill {
 /* ==========================================================================
    CodeFier Exact Navbar Navigation & Hover Effect (.site-header__nav)
    ========================================================================== */
-.site-header__nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+@media (max-width: 1023px) {
+  .site-header__nav {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-header__nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
 }
 
 .site-header__nav a {

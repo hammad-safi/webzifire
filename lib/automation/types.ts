@@ -14,7 +14,9 @@ export type JobType =
   | "send_approval_email"
   | "revise_article"
   | "publish_article"
-  | "sync_seo_metrics";
+  | "sync_seo_metrics"
+  | "verify_facts"
+  | "content_refresh";
 
 export type JobStatus = "pending" | "running" | "completed" | "failed";
 
@@ -58,6 +60,9 @@ export interface QualityReport {
   hasAltText: boolean;
   hasFeaturedImage: boolean;
   hasInventedStats: boolean;
+  factVerificationPassed?: boolean;
+  factualScore?: number;
+  factViolations?: Array<{ category: string; claimText: string; reason: string }>;
   checks: QualityCheckItem[];
   editorSummary: string;
   revisionInstructions?: string[];
@@ -217,4 +222,13 @@ export interface TopicResearchResult {
   seoMetaTitle: string;
   seoMetaDescription: string;
   outlinePoints: string[];
+  cannibalizationCheck?: {
+    isCannibalized: boolean;
+    severity: "none" | "low" | "medium" | "high";
+    similarity: number;
+    conflictingArticleTitle?: string;
+    conflictingSlug?: string;
+    reason?: string;
+    suggestions: string[];
+  };
 }

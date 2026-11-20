@@ -28,6 +28,11 @@ import {
   X,
   Eye,
   Check,
+  Globe,
+  Activity,
+  FileSearch,
+  Layers,
+  Send,
 } from "lucide-react";
 
 export interface DashboardArticle {
@@ -215,6 +220,26 @@ export default function SeoDashboardClient() {
   // Delete Article Confirmation Modal State
   const [deletingArticle, setDeletingArticle] = useState<DashboardArticle | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Capability 1: Keyword Cannibalization Check State
+  const [kwCheckInput, setKwCheckInput] = useState("");
+  const [kwChecking, setKwChecking] = useState(false);
+  const [kwCheckResult, setKwCheckResult] = useState<any | null>(null);
+
+  // Capability 2: Technical Fact Verification State & Modal
+  const [factModalArticle, setFactModalArticle] = useState<DashboardArticle | null>(null);
+  const [factLoading, setFactLoading] = useState(false);
+  const [factReport, setFactReport] = useState<any | null>(null);
+
+  // Capability 3: Google Search Console Modal & Live Inspection State
+  const [gscModalArticle, setGscModalArticle] = useState<DashboardArticle | null>(null);
+  const [gscLoading, setGscLoading] = useState(false);
+  const [gscDetails, setGscDetails] = useState<any | null>(null);
+  const [inspectingGsc, setInspectingGsc] = useState(false);
+
+  // Capability 4: 30-60 Day Content Refresh State
+  const [runningRefreshAudit, setRunningRefreshAudit] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<any | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setLoadingData(true);
@@ -477,6 +502,122 @@ export default function SeoDashboardClient() {
       setIsDeleting(false);
     }
   }, [deletingArticle]);
+
+  // Capability 1 Handler: Keyword Cannibalization Check
+  const handleCheckCannibalization = useCallback(async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!kwCheckInput.trim()) return;
+    setKwChecking(true);
+    try {
+      const res = await fetch("/api/admin/seo/keywords/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: kwCheckInput.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setBanner({ type: "err", text: json.error || "Keyword check failed." });
+      } else {
+        setKwCheckResult(json.result);
+      }
+    } catch {
+      setBanner({ type: "err", text: "Network error during keyword check." });
+    } finally {
+      setKwChecking(false);
+    }
+  }, [kwCheckInput]);
+
+  // Capability 2 Handler: Technical Fact Verification Modal
+  const handleOpenFactModal = useCallback(async (art: DashboardArticle) => {
+    setFactModalArticle(art);
+    setFactLoading(true);
+    setFactReport(null);
+    try {
+      const res = await fetch("/api/admin/seo/articles/verify-facts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ articleId: art.id }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setFactReport(json.report);
+      } else {
+        setBanner({ type: "err", text: json.error || "Fact verification failed." });
+      }
+    } catch {
+      setBanner({ type: "err", text: "Network error during fact verification." });
+    } finally {
+      setFactLoading(false);
+    }
+  }, []);
+
+  // Capability 3 Handlers: Google Search Console Modal & Re-inspection
+  const handleOpenGscModal = useCallback(async (art: DashboardArticle) => {
+    setGscModalArticle(art);
+    setGscLoading(true);
+    setGscDetails(null);
+    try {
+      const res = await fetch(`/api/admin/seo/gsc?slug=${encodeURIComponent(art.slug)}`);
+      const json = await res.json();
+      if (json.success) {
+        setGscDetails(json.data);
+      }
+    } catch {
+      setBanner({ type: "err", text: "Failed loading Google Search Console data." });
+    } finally {
+      setGscLoading(false);
+    }
+  }, []);
+
+  const handleReinspectGsc = useCallback(async (slug: string) => {
+    setInspectingGsc(true);
+    try {
+      const res = await fetch("/api/admin/seo/gsc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "inspect", slug }),
+      });
+      const json = await res.json();
+      if (json.success && json.result) {
+        setGscDetails(json.result);
+        setBanner({
+          type: "ok",
+          text: `Google Search Console URL inspection updated for /blog/${slug}.`,
+        });
+      }
+    } catch {
+      setBanner({ type: "err", text: "Failed re-inspecting URL with Google Search Console." });
+    } finally {
+      setInspectingGsc(false);
+    }
+  }, []);
+
+  // Capability 4 Handler: 30-60 Day Content Refresh Audit
+  const handleRunContentRefreshAudit = useCallback(async () => {
+    setRunningRefreshAudit(true);
+    try {
+      const res = await fetch("/api/admin/seo/content-refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ forceAll: true }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setRefreshResult(json.result);
+        setBanner({
+          type: "ok",
+          text: json.message || "Content refresh audit completed and executive digest sent to founder email!",
+        });
+        loadDashboard();
+      } else {
+        setBanner({ type: "err", text: json.error || "Content refresh audit failed." });
+      }
+    } catch {
+      setBanner({ type: "err", text: "Network error during content refresh audit." });
+    } finally {
+      setRunningRefreshAudit(false);
+    }
+  }, [loadDashboard]);
 
   // Filtered & progressively rendered articles for infinite scroll
   const filteredArticles = useMemo(() => {
@@ -897,7 +1038,8 @@ export default function SeoDashboardClient() {
                         <th className="py-3 px-3">Pillar</th>
                         <th className="py-3 px-3">Image</th>
                         <th className="py-3 px-3">Status</th>
-                        <th className="py-3 px-3">QA</th>
+                        <th className="py-3 px-3">Google Indexing</th>
+                        <th className="py-3 px-3">QA &amp; Facts</th>
                         <th className="py-3 px-3">Words</th>
                         <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
@@ -908,7 +1050,7 @@ export default function SeoDashboardClient() {
                           <td className="py-3.5 px-4 max-w-xs">
                             <div className="font-medium text-[#F5EFE6] line-clamp-1">{art.title}</div>
                             <div className="font-mono text-[11px] text-[#8A8175] mt-0.5 truncate">
-                              /blog/{art.slug} · KW: {art.primary_keyword}
+                              /blog/{art.slug} · KW: <span className="text-[#C4B5A5]">{art.primary_keyword}</span>
                             </div>
                           </td>
                           <td className="py-3.5 px-3">
@@ -954,9 +1096,41 @@ export default function SeoDashboardClient() {
                               {art.status.replace("_", " ")}
                             </span>
                           </td>
-                          <td className="py-3.5 px-3 font-mono text-xs text-[#F5EFE6]">
-                            {art.quality_score}/100
+
+                          {/* Capability 3: Google Search Console Indexing & Impressions Pill */}
+                          <td className="py-3.5 px-3">
+                            {art.status === "published" ? (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenGscModal(art)}
+                                title="Click to inspect Google Indexing & Search Queries"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0B0607] border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 font-mono text-[10px] uppercase transition-colors cursor-pointer"
+                              >
+                                <Globe className="w-3 h-3 text-emerald-400" />
+                                <span>GSC Tracked</span>
+                              </button>
+                            ) : (
+                              <span className="font-mono text-[11px] text-[#8A8175]">Unpublished</span>
+                            )}
                           </td>
+
+                          {/* Capability 2: QA Score + Technical Fact Verification Trigger */}
+                          <td className="py-3.5 px-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-mono text-xs text-[#F5EFE6] font-semibold">
+                                {art.quality_score}/100
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenFactModal(art)}
+                                className="font-mono text-[10px] text-[#D6334A] hover:text-white underline cursor-pointer text-left"
+                                title="Audit technical claims, facts, and source integrity"
+                              >
+                                Verify Facts
+                              </button>
+                            </div>
+                          </td>
+
                           <td className="py-3.5 px-3 font-mono text-xs text-[#C4B5A5]">
                             {art.word_count}
                           </td>
@@ -1067,6 +1241,7 @@ export default function SeoDashboardClient() {
         {/* TAB 2: SEO PERFORMANCE */}
         {activeTab === "seo" && data?.configured && (
           <div className="flex flex-col gap-6">
+            {/* Top GSC Metric Tiles */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-5 rounded-2xl bg-[#140A0C] border border-[#2C181B]">
                 <div className="font-mono text-[11px] uppercase text-[#8A8175]">
@@ -1102,6 +1277,132 @@ export default function SeoDashboardClient() {
               </div>
             </div>
 
+            {/* Capability 1: Keyword Cannibalization Checker Tool */}
+            <div className="bg-[#140A0C] border border-[#2C181B] rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-display text-xl text-[#F5EFE6] flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-[#D6334A]" />
+                    <span>Keyword Cannibalization Checker</span>
+                  </h2>
+                  <p className="font-mono text-xs text-[#8A8175] mt-1">
+                    Before selecting or writing a topic, check existing WebziFire articles to avoid repeatedly targeting the same keyword.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCheckCannibalization} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={kwCheckInput}
+                  onChange={(e) => setKwCheckInput(e.target.value)}
+                  placeholder="e.g. custom crm software development, postgresql enterprise erp..."
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#0B0607] border border-[#2C181B] text-[#F5EFE6] text-xs placeholder:text-[#8A8175] focus:border-[#D6334A] outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={kwChecking || !kwCheckInput.trim()}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#D6334A] hover:bg-[#e0455b] text-white font-mono text-xs font-bold uppercase tracking-wider disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  {kwChecking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                  <span>{kwChecking ? "Checking Overlap..." : "Check Overlap"}</span>
+                </button>
+              </form>
+
+              {kwCheckResult && (
+                <div
+                  className={`p-4 rounded-xl border flex flex-col gap-2.5 ${
+                    kwCheckResult.severity === "high"
+                      ? "bg-[#D6334A]/10 border-[#D6334A]/50 text-[#ffb3ae]"
+                      : kwCheckResult.severity === "medium"
+                      ? "bg-amber-950/20 border-amber-500/40 text-amber-200"
+                      : "bg-emerald-950/20 border-emerald-500/40 text-emerald-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs uppercase font-bold tracking-wider">
+                      {kwCheckResult.severity === "high"
+                        ? "⚠️ High Cannibalization Risk"
+                        : kwCheckResult.severity === "medium"
+                        ? "⚡ Moderate Thematic Overlap"
+                        : "✓ Unique Target Keyword"}
+                    </span>
+                    <span className="font-mono text-xs">
+                      Similarity: {Math.round((kwCheckResult.similarity || 0) * 100)}%
+                    </span>
+                  </div>
+
+                  {kwCheckResult.conflictingArticle && (
+                    <div className="text-xs">
+                      Conflicting Article:{" "}
+                      <strong className="underline">
+                        {kwCheckResult.conflictingArticle.title}
+                      </strong>{" "}
+                      (/blog/{kwCheckResult.conflictingArticle.slug})
+                    </div>
+                  )}
+
+                  {kwCheckResult.reason && (
+                    <p className="text-xs leading-relaxed opacity-90">{kwCheckResult.reason}</p>
+                  )}
+
+                  {Array.isArray(kwCheckResult.suggestions) && kwCheckResult.suggestions.length > 0 && (
+                    <div className="space-y-1 pt-1 border-t border-current/20 font-mono text-[11px]">
+                      <div className="font-semibold uppercase">Differentiation Recommendations:</div>
+                      {kwCheckResult.suggestions.map((s: string, idx: number) => (
+                        <div key={idx}>• {s}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Capability 4: 30–60 Day Content Refresh Engine Card */}
+            <div className="bg-[#140A0C] border border-[#2C181B] rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-display text-xl text-[#F5EFE6] flex items-center gap-2">
+                    <RefreshCw className="w-5 h-5 text-emerald-400" />
+                    <span>30–60 Day Content Refresh Engine</span>
+                  </h2>
+                  <p className="font-mono text-xs text-[#8A8175] mt-1">
+                    Audits older published articles against live Google impressions and modern engineering standards. Sends refresh recommendations to founder email.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRunContentRefreshAudit}
+                  disabled={runningRefreshAudit}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold uppercase tracking-wider cursor-pointer disabled:opacity-50 transition-all shrink-0"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${runningRefreshAudit ? "animate-spin" : ""}`} />
+                  <span>{runningRefreshAudit ? "Auditing Content..." : "Run 30–60d Audit"}</span>
+                </button>
+              </div>
+
+              {refreshResult && (
+                <div className="p-4 rounded-xl bg-[#0B0607] border border-emerald-500/40 text-xs text-[#C4B5A5] space-y-2">
+                  <div className="flex items-center gap-2 font-mono text-emerald-300 font-bold uppercase">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Audit Report Generated &amp; Emailed</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+                    <div>Audited: <strong className="text-white">{refreshResult.totalAudited}</strong></div>
+                    <div>Underperforming: <strong className="text-amber-300">{refreshResult.underperformingCount}</strong></div>
+                    <div>Outdated Tech: <strong className="text-amber-300">{refreshResult.outdatedCount}</strong></div>
+                    <div>Recommendations: <strong className="text-emerald-300">{refreshResult.recommendationsCreated}</strong></div>
+                  </div>
+                  {refreshResult.emailSentTo && (
+                    <div className="font-mono text-[11px] text-[#8A8175]">
+                      Digest dispatched to: <span className="text-[#F5EFE6]">{refreshResult.emailSentTo}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* AI Performance Recommendations */}
             <div className="bg-[#140A0C] border border-[#2C181B] rounded-2xl p-6 space-y-4">
               <h2 className="font-display text-xl text-[#F5EFE6]">
                 AI Performance Recommendations (Read-Only — Never Auto-Edits)
@@ -1658,6 +1959,285 @@ export default function SeoDashboardClient() {
                     <Trash2 className="w-3.5 h-3.5" />
                   )}
                   <span>{isDeleting ? "Deleting..." : "Delete Permanently"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 3: GOOGLE SEARCH CONSOLE TELEMETRY MODAL */}
+        {gscModalArticle && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-2xl bg-[#140A0C] border border-[#2C181B] rounded-3xl p-6 md:p-8 flex flex-col gap-6 my-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[#2C181B] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl text-[#F5EFE6]">Google Search Console Telemetry</h3>
+                    <p className="font-mono text-xs text-[#8A8175] mt-0.5">
+                      /blog/{gscModalArticle.slug}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGscModalArticle(null)}
+                  className="w-8 h-8 rounded-full bg-[#1B0E10] border border-[#2C181B] flex items-center justify-center text-[#8A8175] hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {gscLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-3 text-[#C4B5A5]">
+                  <Loader2 className="w-7 h-7 text-emerald-400 animate-spin" />
+                  <span className="font-mono text-xs">Querying Google Search Console API...</span>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-5">
+                  {/* Article Title */}
+                  <div className="text-base font-semibold text-[#F5EFE6]">
+                    {gscModalArticle.title}
+                  </div>
+
+                  {/* Indexing Diagnostic Card */}
+                  <div className="p-4 rounded-2xl bg-[#0B0607] border border-[#2C181B] flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs uppercase text-[#8A8175]">Indexing State:</span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full font-mono text-[11px] font-bold uppercase ${
+                            gscDetails?.indexingStatus === "indexed"
+                              ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                              : "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                          }`}
+                        >
+                          {gscDetails?.indexingStatus === "indexed" ? "✓ Indexed by Google" : "Submitted / In Crawl Queue"}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleReinspectGsc(gscModalArticle.slug)}
+                        disabled={inspectingGsc}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#140A0C] border border-[#2C181B] hover:border-emerald-500/50 text-xs font-mono text-[#F5EFE6] cursor-pointer disabled:opacity-50"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${inspectingGsc ? "animate-spin" : ""}`} />
+                        <span>{inspectingGsc ? "Re-inspecting..." : "Re-inspect with Google"}</span>
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-[#C4B5A5] font-mono space-y-1">
+                      <div>Coverage: <span className="text-[#F5EFE6]">{gscDetails?.coverageState || "Sitemap Submitted"}</span></div>
+                      {gscDetails?.lastCrawlTime && (
+                        <div>Last Googlebot Crawl: <span className="text-[#F5EFE6]">{new Date(gscDetails.lastCrawlTime).toLocaleString()}</span></div>
+                      )}
+                      {gscDetails?.message && (
+                        <div className="text-[#8A8175] pt-1 text-[11px]">{gscDetails.message}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Performance Metric Tiles */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-4 rounded-xl bg-[#0B0607] border border-[#2C181B]">
+                      <div className="font-mono text-[10px] uppercase text-[#8A8175]">28d Impressions</div>
+                      <div className="font-display text-2xl text-[#F5EFE6] mt-1">{gscDetails?.impressions ?? 0}</div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[#0B0607] border border-[#2C181B]">
+                      <div className="font-mono text-[10px] uppercase text-[#8A8175]">28d Clicks</div>
+                      <div className="font-display text-2xl text-emerald-400 mt-1">{gscDetails?.clicks ?? 0}</div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[#0B0607] border border-[#2C181B]">
+                      <div className="font-mono text-[10px] uppercase text-[#8A8175]">CTR</div>
+                      <div className="font-display text-2xl text-[#F5EFE6] mt-1">
+                        {((gscDetails?.ctr ?? 0) * 100).toFixed(2)}%
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[#0B0607] border border-[#2C181B]">
+                      <div className="font-mono text-[10px] uppercase text-[#8A8175]">Avg Position</div>
+                      <div className="font-display text-2xl text-[#D6334A] mt-1">
+                        {gscDetails?.avgPosition || "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Queries Generating Impressions */}
+                  <div className="p-4 rounded-2xl bg-[#0B0607] border border-[#2C181B] space-y-3">
+                    <div className="font-mono text-xs uppercase font-bold text-[#F5EFE6]">
+                      Search Queries Driving Impressions &amp; Clicks
+                    </div>
+                    {gscDetails?.topQueries && gscDetails.topQueries.length > 0 ? (
+                      <table className="w-full text-left font-mono text-xs">
+                        <thead>
+                          <tr className="border-b border-[#2C181B] text-[#8A8175] text-[10px] uppercase">
+                            <th className="py-2">Query</th>
+                            <th className="py-2 text-right">Impressions</th>
+                            <th className="py-2 text-right">Clicks</th>
+                            <th className="py-2 text-right">Avg Pos</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#2C181B]/50">
+                          {gscDetails.topQueries.map((q: any, idx: number) => (
+                            <tr key={idx}>
+                              <td className="py-2 text-[#F5EFE6]">{q.query}</td>
+                              <td className="py-2 text-right text-[#C4B5A5]">{q.impressions}</td>
+                              <td className="py-2 text-right text-emerald-400">{q.clicks}</td>
+                              <td className="py-2 text-right text-[#8A8175]">{q.position}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-xs text-[#8A8175] leading-relaxed">
+                        No specific search query impressions registered yet. As Google indexes the article, emerging search queries from founders and CTOs will appear here automatically.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2 border-t border-[#2C181B]">
+                <button
+                  type="button"
+                  onClick={() => setGscModalArticle(null)}
+                  className="px-5 py-2 rounded-full bg-[#140A0C] border border-[#2C181B] text-[#C4B5A5] hover:text-white font-mono text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 4: TECHNICAL FACT & SOURCE VERIFICATION MODAL */}
+        {factModalArticle && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-2xl bg-[#140A0C] border border-[#2C181B] rounded-3xl p-6 md:p-8 flex flex-col gap-6 my-8 max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-[#2C181B] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#D6334A]/15 border border-[#D6334A]/30 flex items-center justify-center text-[#D6334A]">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl text-[#F5EFE6]">Source &amp; Fact Verification</h3>
+                    <p className="font-mono text-xs text-[#8A8175] mt-0.5">
+                      /blog/{factModalArticle.slug}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFactModalArticle(null)}
+                  className="w-8 h-8 rounded-full bg-[#1B0E10] border border-[#2C181B] flex items-center justify-center text-[#8A8175] hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {factLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-3 text-[#C4B5A5]">
+                  <Loader2 className="w-7 h-7 text-[#D6334A] animate-spin" />
+                  <span className="font-mono text-xs">Auditing technical claims &amp; link integrity...</span>
+                </div>
+              ) : factReport ? (
+                <div className="flex flex-col gap-5">
+                  {/* Factual Score Hero Card */}
+                  <div className="p-4 rounded-2xl bg-[#0B0607] border border-[#2C181B] flex items-center justify-between">
+                    <div>
+                      <div className="font-mono text-xs uppercase text-[#8A8175]">Factual Integrity Score</div>
+                      <div className="font-display text-3xl text-emerald-400 mt-1">
+                        {factReport.factualScore}/100
+                      </div>
+                    </div>
+                    <span
+                      className={`px-3 py-1 rounded-full font-mono text-xs font-bold uppercase ${
+                        factReport.overallPassed
+                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                          : "bg-[#D6334A]/15 text-[#ffb3ae] border border-[#D6334A]/30"
+                      }`}
+                    >
+                      {factReport.overallPassed ? "✓ All Checks Passed" : "⚠️ Factual Warnings"}
+                    </span>
+                  </div>
+
+                  {/* 4 Core Verification Pillar Badges */}
+                  <div className="grid grid-cols-2 gap-2.5 font-mono text-xs">
+                    <div className="p-3 rounded-xl bg-[#0B0607] border border-[#2C181B] flex items-center justify-between">
+                      <span className="text-[#C4B5A5]">Case Studies</span>
+                      <span className="text-emerald-400 font-bold">
+                        {factReport.caseStudiesVerified ? "✓ No Fake Clients" : "⚠️ Review"}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#0B0607] border border-[#2C181B] flex items-center justify-between">
+                      <span className="text-[#C4B5A5]">Statistics</span>
+                      <span className="text-emerald-400 font-bold">
+                        {factReport.statisticsVerified ? "✓ Zero Invented Stats" : "⚠️ Review"}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#0B0607] border border-[#2C181B] flex items-center justify-between">
+                      <span className="text-[#C4B5A5]">Link Safety</span>
+                      <span className="text-emerald-400 font-bold">
+                        {factReport.linksVerified ? "✓ Valid URLs" : "⚠️ Invalid Link"}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-[#0B0607] border border-[#2C181B] flex items-center justify-between">
+                      <span className="text-[#C4B5A5]">Engineering Standards</span>
+                      <span className="text-emerald-400 font-bold">
+                        {factReport.technicalAccuracyVerified ? "✓ Verified Sound" : "⚠️ Review"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <p className="text-xs text-[#C4B5A5] leading-relaxed p-3.5 rounded-xl bg-[#0B0607] border border-[#2C181B]">
+                    {factReport.summary}
+                  </p>
+
+                  {/* Verified Claims */}
+                  {Array.isArray(factReport.verifiedClaims) && factReport.verifiedClaims.length > 0 && (
+                    <div className="p-4 rounded-xl bg-[#0B0607] border border-[#2C181B] space-y-2">
+                      <div className="font-mono text-xs uppercase font-bold text-emerald-300">
+                        Verified Software Engineering Principles:
+                      </div>
+                      <div className="space-y-1 font-mono text-xs text-[#C4B5A5]">
+                        {factReport.verifiedClaims.map((c: string, idx: number) => (
+                          <div key={idx}>✓ {c}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Violations if any */}
+                  {Array.isArray(factReport.violations) && factReport.violations.length > 0 && (
+                    <div className="p-4 rounded-xl bg-[#D6334A]/10 border border-[#D6334A]/30 space-y-2">
+                      <div className="font-mono text-xs uppercase font-bold text-[#ffb3ae]">
+                        Flagged Claims to Adjust:
+                      </div>
+                      <div className="space-y-2 text-xs text-[#ffb3ae]">
+                        {factReport.violations.map((v: any, idx: number) => (
+                          <div key={idx} className="p-2 rounded bg-black/40 border border-[#D6334A]/20">
+                            <div><strong>Claim:</strong> &ldquo;{v.claimText}&rdquo;</div>
+                            <div className="text-white/80 mt-0.5"><strong>Reason:</strong> {v.reason}</div>
+                            <div className="text-emerald-300 mt-0.5"><strong>Fix:</strong> {v.suggestedFix}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              <div className="flex justify-end pt-2 border-t border-[#2C181B]">
+                <button
+                  type="button"
+                  onClick={() => setFactModalArticle(null)}
+                  className="px-5 py-2 rounded-full bg-[#140A0C] border border-[#2C181B] text-[#C4B5A5] hover:text-white font-mono text-xs uppercase tracking-wider cursor-pointer"
+                >
+                  Close
                 </button>
               </div>
             </div>

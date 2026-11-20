@@ -410,3 +410,225 @@ Return ONLY valid JSON:
 
   return { gscSynced, ga4Synced, recommendationsCreated, notes };
 }
+
+export interface ArticleGscInspectionResult {
+  configured: boolean;
+  slug: string;
+  inspectionUrl: string;
+  indexingStatus: string;
+  verdict: string;
+  lastCrawlTime?: string;
+  robotsTxtState?: string;
+  coverageState?: string;
+  pageFetchState?: string;
+  crawledAs?: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  avgPosition: number;
+  topQueries: Array<{ query: string; impressions: number; clicks: number; position: number }>;
+  message?: string;
+  inspectedAt: string;
+}
+
+/**
+ * Capability 3: Inspect a specific published article in Google Search Console.
+ * Checks whether Google has indexed the article, retrieves crawl state, and queries
+ * impressions and clicks.
+ */
+export async function inspectArticleIndexing(slug: string): Promise<ArticleGscInspectionResult> {
+  const admin = getSupabaseAdmin();
+  const siteBase = (process.env.NEXT_PUBLIC_SITE_URL || "https://webzifire.com").replace(/\/+$/, "");
+  const inspectionUrl = `${siteBase}/blog/${slug}`;
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Retrieve existing local metrics if any
+  const { data: existingMetric } = await admin
+    .from("seo_performance_metrics")
+    .select("*")
+    .eq("article_slug", slug)
+    .order("metric_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let indexingStatus = existingMetric?.indexing_status || "submitted";
+  let verdict = "NEUTRAL";
+  let lastCrawlTime: string | undefined;
+  let coverageState: string | undefined;
+  let pageFetchState: string | undefined;
+  let robotsTxtState: string | undefined;
+  let impressions = existingMetric?.impressions || 0;
+  let clicks = existingMetric?.clicks || 0;
+  let ctr = existingMetric?.ctr || 0;
+  let avgPosition = existingMetric?.avg_position || 0;
+  let topQueries = existingMetric?.top_queries || [];
+
+  if (!isGscConfigured()) {
+    return {
+      configured: false,
+      slug,
+      inspectionUrl,
+      indexingStatus,
+      verdict: "NEUTRAL",
+      coverageState: "Sitemap Submitted (GSC credentials pending)",
+      impressions,
+      clicks,
+      ctr,
+      avgPosition,
+      topQueries,
+      message: "Google Search Console service account not yet configured in environment variables. URL is live and submitted to /sitemap.xml.",
+      inspectedAt: new Date().toISOString(),
+    };
+  }
+
+  try {
+    const accessToken = await getGoogleAccessToken([
+      "https://www.googleapis.com/auth/webmasters.readonly",
+    ]);
+
+    // 1. Inspect URL Indexing Status
+    const inspectRes = await fetch(
+      "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inspectionUrl,
+          siteUrl: process.env.GSC_SITE_URL,
+        }),
+      }
+    );
+
+    if (inspectRes.ok) {
+      const inspectJson = await inspectRes.json();
+      const statusRes = inspectJson?.inspectionResult?.indexStatusResult;
+      verdict = statusRes?.verdict || "NEUTRAL";
+      coverageState = statusRes?.coverageState || "Unknown";
+      robotsTxtState = statusRes?.robotsTxtState;
+      pageFetchState = statusRes?.pageFetchState;
+      lastCrawlTime = statusRes?.lastCrawlTime;
+
+      if (verdict === "PASS" || (coverageState && coverageState.toLowerCase().includes("indexed"))) {
+        indexingStatus = "indexed";
+      } else if (coverageState && coverageState.toLowerCase().includes("crawled")) {
+        indexingStatus = "crawled";
+      } else if (coverageState && coverageState.toLowerCase().includes("discovered")) {
+        indexingStatus = "discovered";
+      } else {
+        indexingStatus = "submitted";
+      }
+    }
+
+    // 2. Fetch recent Search Analytics for this specific article URL
+    const siteUrl = encodeURIComponent(process.env.GSC_SITE_URL!);
+    const startDate = isoDateDaysAgo(28);
+    const endDate = isoDateDaysAgo(1);
+
+    const queryRes = await fetch(
+      `https://searchconsole.googleapis.com/webmasters/v3/sites/${siteUrl}/searchAnalytics/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          dimensions: ["query"],
+          dimensionFilterGroups: [
+            {
+              filters: [
+                {
+                  dimension: "page",
+                  operator: "equals",
+                  expression: inspectionUrl,
+                },
+              ],
+            },
+          ],
+          rowLimit: 50,
+        }),
+      }
+    );
+
+    if (queryRes.ok) {
+      const queryJson = await queryRes.json();
+      const rows: Array<{
+        keys: [string];
+        clicks: number;
+        impressions: number;
+        ctr: number;
+        position: number;
+      }> = queryJson.rows || [];
+
+      if (rows.length > 0) {
+        const totalImpr = rows.reduce((s, r) => s + r.impressions, 0);
+        const totalClicks = rows.reduce((s, r) => s + r.clicks, 0);
+        const weightedPos =
+          totalImpr > 0
+            ? rows.reduce((s, r) => s + r.position * r.impressions, 0) / totalImpr
+            : 0;
+
+        impressions = Math.round(totalImpr);
+        clicks = Math.round(totalClicks);
+        ctr = totalImpr > 0 ? Number((totalClicks / totalImpr).toFixed(4)) : 0;
+        avgPosition = Number(weightedPos.toFixed(2));
+        topQueries = rows
+          .sort((a, b) => b.impressions - a.impressions)
+          .slice(0, 10)
+          .map((r) => ({
+            query: r.keys[0],
+            impressions: Math.round(r.impressions),
+            clicks: Math.round(r.clicks),
+            position: Number(r.position.toFixed(1)),
+          }));
+      }
+    }
+
+    // Upsert into Supabase seo_performance_metrics
+    const { data: artRow } = await admin
+      .from("journal_articles")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    await admin.from("seo_performance_metrics").upsert(
+      {
+        article_id: artRow?.id || null,
+        article_slug: slug,
+        metric_date: today,
+        impressions,
+        clicks,
+        ctr,
+        avg_position: avgPosition,
+        top_queries: topQueries,
+        indexing_status: indexingStatus,
+      },
+      { onConflict: "article_slug,metric_date" }
+    );
+  } catch (err) {
+    console.error("[GoogleMonitoring] Inspection error for slug", slug, err);
+  }
+
+  return {
+    configured: true,
+    slug,
+    inspectionUrl,
+    indexingStatus,
+    verdict,
+    lastCrawlTime,
+    coverageState,
+    pageFetchState,
+    robotsTxtState,
+    impressions,
+    clicks,
+    ctr,
+    avgPosition,
+    topQueries,
+    inspectedAt: new Date().toISOString(),
+  };
+}

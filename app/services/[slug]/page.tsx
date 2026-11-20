@@ -1,6 +1,5 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WebziFireBot from "@/components/WebziFireBot";
 import { services } from "@/data/services";
@@ -54,8 +53,6 @@ export default function ServiceDetailPage({
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
-      <Navbar />
-
       <main className="w-full pt-28 pb-20">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col gap-14">
           {/* Back link */}

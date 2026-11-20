@@ -99,7 +99,11 @@ Strict Integrity & Readability Rules:
 2. Readability & Tone: Write in clear, conversational, engaging plain English (aim for 8th–10th grade reading level, Flesch-Kincaid score ~65). Use short paragraphs, clear subheadings, and simple, natural sentence structures.
 3. Clarity Over Complexity: Explain technical ideas using relatable, real-world analogies (e.g., comparing databases to well-organized filing cabinets, or API caching to keeping popular menu items ready in advance).
 4. Strictly NO Academic Jargon or Buzzwords: Avoid pompous phrasing like "hyper-converged paradigm", "deterministic synthesis", "architectural bloat", "delve into", "in today's fast-paced digital landscape", "uncompromising rigor", or "testament to". Write so that ANY business owner, startup founder, or non-technical manager can read, understand, and enjoy the article effortlessly.
-5. Honesty & Accuracy: NEVER invent fake keyword search volumes, fake analyst citations, or fabricated statistics. Use real software principles, concrete architecture walkthroughs, and realistic scenarios clearly labeled as examples.
+5. Strict Fact & Technical Integrity:
+   - NEVER invent client names, case studies, or claims of proprietary client work (e.g., never say 'our client Acme Corp' or 'we built this for a Fortune 500 company').
+   - Real-world scenarios MUST be explicitly labeled as 'Production Architecture Example' or 'Reference Pattern' without inventing fictional clients.
+   - NEVER invent fake keyword search volumes, fake analyst citations, or fabricated empirical percentages (e.g., do not say 'studies prove 84.7% of companies fail').
+   - Technical architecture claims (PostgreSQL transactions, Redis caching, Supabase RLS, Next.js rendering) must be 100% technically accurate and adhere to real engineering specifications.
 6. ONLY use internal link URLs from the provided Valid Internal Routes list. NEVER invent a broken URL.
 `;
 
