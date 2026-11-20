@@ -77,6 +77,35 @@ function isoDateDaysAgo(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+async function resolveGscSiteUrl(accessToken: string): Promise<string> {
+  const configured = (process.env.GSC_SITE_URL || "https://webzifire.com/").trim();
+  try {
+    const listRes = await fetch("https://searchconsole.googleapis.com/webmasters/v3/sites", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (listRes.ok) {
+      const listData = (await listRes.json()) as { siteEntry?: Array<{ siteUrl: string }> };
+      const entries = listData.siteEntry || [];
+      const cleanHost = configured
+        .replace(/^https?:\/\//i, "")
+        .replace(/\/+$/, "")
+        .replace(/^sc-domain:/i, "");
+
+      const exact = entries.find((e) => e.siteUrl === configured);
+      if (exact) return exact.siteUrl;
+
+      const domainMatch = entries.find((e) => e.siteUrl === `sc-domain:${cleanHost}`);
+      if (domainMatch) return domainMatch.siteUrl;
+
+      const partial = entries.find((e) => e.siteUrl.includes(cleanHost));
+      if (partial) return partial.siteUrl;
+    }
+  } catch (err) {
+    console.error("Failed to auto-resolve GSC siteUrl:", err);
+  }
+  return configured;
+}
+
 /**
  * Step 9: Syncs Google Search Console (impressions, clicks, CTR, position, queries, indexing)
  * and Google Analytics 4 (pageviews, engagement) for published /blog/* articles,
@@ -155,7 +184,8 @@ export async function syncSeoPerformanceMetrics(): Promise<{
       const accessToken = await getGoogleAccessToken([
         "https://www.googleapis.com/auth/webmasters.readonly",
       ]);
-      const siteUrl = encodeURIComponent(process.env.GSC_SITE_URL!);
+      const resolvedSite = await resolveGscSiteUrl(accessToken);
+      const siteUrl = encodeURIComponent(resolvedSite);
 
       const res = await fetch(
         `https://searchconsole.googleapis.com/webmasters/v3/sites/${siteUrl}/searchAnalytics/query`,
@@ -523,7 +553,8 @@ export async function inspectArticleIndexing(slug: string): Promise<ArticleGscIn
     }
 
     // 2. Fetch recent Search Analytics for this specific article URL
-    const siteUrl = encodeURIComponent(process.env.GSC_SITE_URL!);
+    const resolvedSite = await resolveGscSiteUrl(accessToken);
+    const siteUrl = encodeURIComponent(resolvedSite);
     const startDate = isoDateDaysAgo(28);
     const endDate = isoDateDaysAgo(1);
 
