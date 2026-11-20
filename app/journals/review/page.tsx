@@ -81,7 +81,7 @@ function ReviewPortalContent() {
     e.preventDefault();
     if (!token) return;
     if (mode === "revise" && feedback.trim().length < 5) {
-      setError("Please describe what you want Gemini AI to revise.");
+      setError("Please describe what you want WebziFire AI to revise.");
       return;
     }
 
@@ -333,7 +333,7 @@ function ReviewPortalContent() {
                 {mode === "revise" && (
                   <div className="flex flex-col gap-3">
                     <label className="font-mono text-xs uppercase tracking-wider text-[#C4B5A5]">
-                      What should Gemini AI improve or change?
+                      What should WebziFire AI improve or change?
                     </label>
                     <textarea
                       rows={4}
@@ -406,7 +406,7 @@ function ReviewPortalContent() {
                   ) : mode === "revise" ? (
                     <>
                       <RefreshCw className="w-4 h-4" />
-                      <span>Submit Revision to Gemini AI</span>
+                      <span>Submit Revision to WebziFire AI</span>
                     </>
                   ) : (
                     <>

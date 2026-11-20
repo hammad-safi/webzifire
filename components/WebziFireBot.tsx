@@ -166,7 +166,7 @@ export default function WebziFireBot() {
     {
       id: "1",
       sender: "bot",
-      text: "Hello! I am WebziFire AI, powered by Google Gemini. Ask me about our 12 engineering practices, project scoping, architecture, or custom tech stacks!",
+      text: "Hello! I am WebziFire AI. Ask me about our 12 engineering practices, project scoping, architecture, or custom tech stacks!",
       time: "Just now",
     },
   ]);
@@ -324,10 +324,7 @@ export default function WebziFireBot() {
           <span className="font-mono text-xs uppercase tracking-wider font-semibold text-[#F5EFE6] leading-tight">
             WebziFire AI
           </span>
-          <span className="font-mono text-[10px] text-[#D6334A] font-medium flex items-center gap-1">
-            <Sparkles className="w-2.5 h-2.5" />
-            Powered by Gemini
-          </span>
+    
         </div>
       </button>
 
@@ -350,10 +347,7 @@ export default function WebziFireBot() {
                   <span className="font-display text-sm font-medium text-[#F5EFE6]">
                     WebziFire AI
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#D6334A]/15 border border-[#D6334A]/40 font-mono text-[9px] uppercase tracking-wider font-semibold text-[#F5EFE6]">
-                    <Sparkles className="w-2.5 h-2.5 text-[#D6334A]" />
-                    Powered by Gemini
-                  </span>
+        
                 </div>
                 <span className="font-mono text-[10px] text-[#8A8175] flex items-center gap-1 mt-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block shadow-[0_0_6px_#10B981]" />
@@ -430,7 +424,7 @@ export default function WebziFireBot() {
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A] animate-bounce [animation-delay:-0.15s]" />
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A] animate-bounce" />
                   </div>
-                  <span className="font-mono text-[10px] text-[#8A8175]">WebziFire AI (Gemini) is thinking...</span>
+                  <span className="font-mono text-[10px] text-[#8A8175]">WebziFire AI is thinking...</span>
                 </div>
               </div>
             )}
@@ -560,7 +554,7 @@ export default function WebziFireBot() {
             >
               <input
                 type="text"
-                placeholder={isThinking ? "WebziFire AI (Gemini) is thinking..." : "Ask WebziFire AI (Powered by Gemini)..."}
+                placeholder={isThinking ? "WebziFire AI is thinking..." : "Ask WebziFire AI.."}
                 disabled={isThinking}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
@@ -582,7 +576,7 @@ export default function WebziFireBot() {
               <span>Press Enter to send</span>
               <span className="text-[#C4B5A5] font-medium flex items-center gap-1.5 bg-[#1B0E10] px-2.5 py-0.5 rounded-full border border-[#2C181B]">
                 <Sparkles className="w-2.5 h-2.5 text-[#D6334A]" />
-                <span>Powered by <strong className="text-[#F5EFE6] font-semibold">Gemini</strong></span>
+                <span className="text-[#F5EFE6] font-semibold">WebziFire AI</span>
               </span>
             </div>
           </div>
