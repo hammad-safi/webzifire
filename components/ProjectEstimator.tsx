@@ -37,8 +37,8 @@ const SERVICE_OPTIONS: ServiceOption[] = [
     desc: "Sub-second Next.js portal with reactive UI and high conversion",
     icon: Code2,
     baseWeeks: 5,
-    baseMinPrice: 4500,
-    baseMaxPrice: 9500,
+    baseMinPrice: 2200,
+    baseMaxPrice: 4800,
     recommendedStack: "Next.js 14 · TypeScript · Tailwind CSS · Supabase Postgres",
   },
   {
@@ -47,8 +47,8 @@ const SERVICE_OPTIONS: ServiceOption[] = [
     desc: "Cross-platform iOS & Android with offline-first architecture",
     icon: Smartphone,
     baseWeeks: 8,
-    baseMinPrice: 7500,
-    baseMaxPrice: 15000,
+    baseMinPrice: 3800,
+    baseMaxPrice: 7500,
     recommendedStack: "React Native / Expo · TypeScript · Node.js · Fast APIs",
   },
   {
@@ -57,8 +57,8 @@ const SERVICE_OPTIONS: ServiceOption[] = [
     desc: "Bespoke operations, inventory & logistics without per-seat licensing",
     icon: Layers,
     baseWeeks: 10,
-    baseMinPrice: 12000,
-    baseMaxPrice: 25000,
+    baseMinPrice: 5900,
+    baseMaxPrice: 12500,
     recommendedStack: "Next.js · PostgreSQL · RBAC Security · Automated Workflows",
   },
   {
@@ -67,8 +67,8 @@ const SERVICE_OPTIONS: ServiceOption[] = [
     desc: "Custom LLM agents, RAG pipelines, and automated business workflows",
     icon: Cpu,
     baseWeeks: 4,
-    baseMinPrice: 5000,
-    baseMaxPrice: 11000,
+    baseMinPrice: 2500,
+    baseMaxPrice: 5500,
     recommendedStack: "Python / Node.js · Vector Databases · LLM Orchestration",
   },
   {
@@ -77,8 +77,8 @@ const SERVICE_OPTIONS: ServiceOption[] = [
     desc: "Scalable subscription software with billing, teams, and analytics",
     icon: Sparkles,
     baseWeeks: 9,
-    baseMinPrice: 9500,
-    baseMaxPrice: 20000,
+    baseMinPrice: 4800,
+    baseMaxPrice: 9900,
     recommendedStack: "Next.js · Supabase Auth · Stripe Billing · Postgres Multi-Tenancy",
   },
   {
@@ -87,25 +87,25 @@ const SERVICE_OPTIONS: ServiceOption[] = [
     desc: "High-throughput store or retail system with real-time sync",
     icon: ShoppingBag,
     baseWeeks: 7,
-    baseMinPrice: 6500,
-    baseMaxPrice: 14000,
+    baseMinPrice: 3200,
+    baseMaxPrice: 6900,
     recommendedStack: "Next.js · Headless API · Stripe Payments · Realtime Sync",
   },
 ];
 
 const SCALES = [
   { id: "mvp", label: "MVP / Prototype", multiplier: 1.0, weeksAdd: 0, desc: "Fast-to-market, core features for launch" },
-  { id: "growth", label: "Production & Growth", multiplier: 1.45, weeksAdd: 3, desc: "Built for scaling users, robust automated testing & CI/CD" },
-  { id: "enterprise", label: "Enterprise Grade", multiplier: 2.1, weeksAdd: 6, desc: "High availability, SOC2/HIPAA ready, audit logs, 99.99% SLA" },
+  { id: "growth", label: "Production & Growth", multiplier: 1.4, weeksAdd: 3, desc: "Built for scaling users, robust automated testing & CI/CD" },
+  { id: "enterprise", label: "Enterprise Grade", multiplier: 1.9, weeksAdd: 6, desc: "High availability, SOC2/HIPAA ready, audit logs, 99.99% SLA" },
 ];
 
 const FEATURE_MODULES = [
-  { id: "auth-rbac", label: "Auth & Multi-Role Permissions", weeksAdd: 1, priceAdd: 800 },
-  { id: "payments-billing", label: "Stripe Billing & Subscriptions", weeksAdd: 1.5, priceAdd: 1400 },
-  { id: "realtime-chat", label: "Real-Time WebSockets & Notifications", weeksAdd: 1.5, priceAdd: 1200 },
-  { id: "ai-rag", label: "Custom AI Assistant & Knowledge Base", weeksAdd: 2, priceAdd: 2200 },
-  { id: "integrations", label: "Third-Party API & Webhook Connectors", weeksAdd: 1, priceAdd: 1000 },
-  { id: "admin-analytics", label: "Executive Analytics & Reporting Command Center", weeksAdd: 1.5, priceAdd: 1500 },
+  { id: "auth-rbac", label: "Auth & Multi-Role Permissions", weeksAdd: 1, priceAdd: 400 },
+  { id: "payments-billing", label: "Stripe Billing & Subscriptions", weeksAdd: 1.5, priceAdd: 700 },
+  { id: "realtime-chat", label: "Real-Time WebSockets & Notifications", weeksAdd: 1.5, priceAdd: 600 },
+  { id: "ai-rag", label: "Custom AI Assistant & Knowledge Base", weeksAdd: 2, priceAdd: 1100 },
+  { id: "integrations", label: "Third-Party API & Webhook Connectors", weeksAdd: 1, priceAdd: 500 },
+  { id: "admin-analytics", label: "Executive Analytics & Reporting Command Center", weeksAdd: 1.5, priceAdd: 750 },
 ];
 
 export default function ProjectEstimator() {
@@ -145,8 +145,8 @@ export default function ProjectEstimator() {
       return acc + (feat ? feat.weeksAdd : 0);
     }, 0);
 
-    const rawMin = Math.round((service.baseMinPrice * scale.multiplier + extraFeaturePrice) / 500) * 500;
-    const rawMax = Math.round((service.baseMaxPrice * scale.multiplier + extraFeaturePrice * 1.3) / 500) * 500;
+    const rawMin = Math.round((service.baseMinPrice * scale.multiplier + extraFeaturePrice) / 100) * 100;
+    const rawMax = Math.round((service.baseMaxPrice * scale.multiplier + extraFeaturePrice * 1.2) / 100) * 100;
 
     let totalWeeks = Math.max(3, Math.round(service.baseWeeks + scale.weeksAdd + extraFeatureWeeks));
     if (velocity === "accelerated") {
@@ -420,9 +420,14 @@ Client Notes: ${clientNotes || "None"}`,
             </div>
 
             <div className="p-4 rounded-xl bg-[#140A0C] border border-[#2C181B]">
-              <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#8A8175] uppercase">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Investment Est.</span>
+              <div className="flex items-center justify-between font-mono text-[11px] uppercase">
+                <div className="flex items-center gap-1.5 text-[#8A8175]">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Investment Est.</span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  Negotiable
+                </span>
               </div>
               <div className="font-display text-xl font-bold text-emerald-400 mt-2">
                 ${calculation.minPrice.toLocaleString()}{" "}
@@ -430,7 +435,40 @@ Client Notes: ${clientNotes || "None"}`,
                   – ${calculation.maxPrice.toLocaleString()}
                 </span>
               </div>
-              <div className="text-[10px] text-[#8A8175] font-mono mt-1">USD · All IP Handover</div>
+              <div className="text-[10px] text-[#A29A8E] font-mono mt-1">
+                Flexible &amp; Open to Discussion
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing is 100% Negotiable Notice & Direct WhatsApp / Email Connect */}
+          <div className="p-4 rounded-xl bg-[#1B0E11] border border-[#D6334A]/40 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-[#D6334A] font-semibold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Pricing is 100% Negotiable</span>
+              </span>
+            </div>
+            <p className="font-sans text-xs text-[#C4B5A5] leading-relaxed">
+              Every project is tailored to your exact scope and budget. You can discuss and negotiate custom terms directly with our senior team via email or WhatsApp:
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <a
+                href="https://wa.me/923145660928?text=Hello%20WebziFire!%20I%20used%20your%20project%20estimator%20and%20would%20like%20to%20discuss%20pricing%20and%20scope%20negotiation."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-mono text-[11px] font-semibold transition-all"
+              >
+                <span>Discuss on WhatsApp</span>
+                <ArrowRight className="w-3 h-3" />
+              </a>
+              <a
+                href="mailto:inquire@webzifire.com?subject=Project%20Budget%20%26%20Scope%20Discussion"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-[#2C181B] text-[#F5EFE6] font-mono text-[11px] font-semibold transition-all"
+              >
+                <span>Discuss via Email</span>
+                <ArrowRight className="w-3 h-3" />
+              </a>
             </div>
           </div>
 

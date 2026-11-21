@@ -29,11 +29,12 @@ Delivery Model:
 - Senior-led engineering only. Spearheaded directly by principal architects, design leads, and AI specialists. No junior handoffs or communication bottlenecks.
 - Transparent milestone delivery, strict SLAs, SOC2/HIPAA compliance readiness, and full IP handover to clients upon completion.
 
-Typical Scoping & Timelines:
-- Performance corporate websites & marketing portals: 4 to 8 weeks.
-- Full-stack multi-tenant SaaS products & enterprise platforms: 8 to 16 weeks.
-- Custom AI agents & RAG pipelines: 3 to 6 weeks.
-- Scoping is milestone-anchored with transparent fixed-price or dedicated senior pods.
+Typical Scoping, Timelines & Pricing:
+- Performance corporate websites & web portals: 4 to 8 weeks (starting ~$2,200).
+- Cross-platform mobile applications: 6 to 10 weeks (starting ~$3,800).
+- Full-stack multi-tenant SaaS products & enterprise platforms: 8 to 16 weeks (starting ~$4,800).
+- Custom AI agents & RAG pipelines: 3 to 6 weeks (starting ~$2,500).
+- Highly Negotiable & Flexible: WebziFire's pricing is 100% negotiable and tailored to each client's specific scope and budget. Always tell clients that our terms are flexible and invite them to discuss and negotiate directly via WhatsApp (+92 314 5660928) or Email (inquire@webzifire.com) or by clicking **Send Brief** in this chat.
 
 Our 12 Core Services:
 ${servicesSummary}
