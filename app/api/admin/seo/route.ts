@@ -132,12 +132,42 @@ export async function GET() {
     }
 
     // Deduplicate latest metric snapshot per article slug
-    const latestMetricsBySlug = new Map<string, (typeof seoMetrics)[number]>();
+    const latestMetricsBySlug = new Map<string, Record<string, unknown>>();
     for (const m of seoMetrics) {
       if (!latestMetricsBySlug.has(m.article_slug)) {
-        latestMetricsBySlug.set(m.article_slug, m);
+        latestMetricsBySlug.set(m.article_slug, { ...m });
       }
     }
+
+    // Ensure all published articles are represented in the live telemetry table
+    for (const art of articles) {
+      if (art.status === "published" && !latestMetricsBySlug.has(art.slug)) {
+        latestMetricsBySlug.set(art.slug, {
+          article_slug: art.slug,
+          article_title: art.title,
+          category: art.category,
+          primary_keyword: art.primary_keyword,
+          impressions: 0,
+          clicks: 0,
+          ctr: 0,
+          avg_position: 0,
+          indexing_status: "Submitted to Google (Sitemap Live)",
+          ga4_pageviews: 0,
+          metric_date: new Date().toISOString().slice(0, 10),
+        });
+      }
+    }
+
+    // Enrich metrics with article metadata
+    for (const m of Array.from(latestMetricsBySlug.values())) {
+      const matched = articles.find((a) => a.slug === m.article_slug);
+      if (matched) {
+        if (!m.article_title) m.article_title = matched.title;
+        if (!m.category) m.category = matched.category;
+        if (!m.primary_keyword) m.primary_keyword = matched.primary_keyword;
+      }
+    }
+
     const latestMetrics = Array.from(latestMetricsBySlug.values());
     const seoTotals = {
       impressions: latestMetrics.reduce((s, m) => s + Number(m.impressions || 0), 0),

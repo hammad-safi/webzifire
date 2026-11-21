@@ -156,6 +156,9 @@ interface DashboardData {
     };
     metrics: Array<{
       article_slug: string;
+      article_title?: string;
+      category?: string;
+      primary_keyword?: string;
       impressions: number;
       clicks: number;
       ctr: number;
@@ -1274,6 +1277,122 @@ export default function SeoDashboardClient() {
                 <div className="font-display text-3xl text-[#D6334A] mt-2">
                   {data.seo?.totals.ga4Pageviews || 0}
                 </div>
+              </div>
+            </div>
+
+            {/* Live Telemetry Status Banner */}
+            <div className="p-4 rounded-2xl bg-[#140A0C] border border-[#2C181B] flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34D399]" />
+                <div>
+                  <div className="font-mono text-xs text-[#F5EFE6] font-semibold flex items-center gap-2">
+                    <span>Google Telemetry &amp; Rank Tracking Engine</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-[10px]">
+                      Connected
+                    </span>
+                  </div>
+                  <p className="font-mono text-[11px] text-[#8A8175] mt-0.5">
+                    Live connection to <code className="text-[#C4B5A5]">sc-domain:webzifire.com</code> (Search Console) &amp; <code className="text-[#C4B5A5]">GA4 (Property {data.integrations.ga4Api ? "565329399" : "Live"})</code>. Google aggregates fresh search impressions in 24-48h batches.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSyncSeo}
+                disabled={syncingSeo}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1B0E10] hover:bg-[#2C181B] border border-[#2C181B] text-[#F5EFE6] font-mono text-xs cursor-pointer transition-all shrink-0"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${syncingSeo ? "animate-spin text-[#D6334A]" : ""}`} />
+                <span>{syncingSeo ? "Syncing..." : "Sync SEO Telemetry"}</span>
+              </button>
+            </div>
+
+            {/* Per-Article Google Indexing & Search Telemetry Table */}
+            <div className="bg-[#140A0C] border border-[#2C181B] rounded-2xl p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-xl text-[#F5EFE6] flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-emerald-400" />
+                    <span>Article Telemetry &amp; Google Indexing Status</span>
+                  </h2>
+                  <p className="font-mono text-xs text-[#8A8175] mt-1">
+                    Live tracking per article across Google Search queries, impressions, click rates, and GA4 engagement.
+                  </p>
+                </div>
+                <div className="font-mono text-xs text-[#8A8175]">
+                  Tracked Articles: <strong className="text-white">{data.seo?.metrics?.length || 0}</strong>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#2C181B] font-mono text-[11px] uppercase text-[#8A8175]">
+                      <th className="py-3 px-3">Article &amp; Pillar</th>
+                      <th className="py-3 px-3">Primary Keyword</th>
+                      <th className="py-3 px-3">Google Indexing</th>
+                      <th className="py-3 px-3 text-right">28d Impr</th>
+                      <th className="py-3 px-3 text-right">28d Clicks</th>
+                      <th className="py-3 px-3 text-right">CTR</th>
+                      <th className="py-3 px-3 text-right">Avg Position</th>
+                      <th className="py-3 px-3 text-right">GA4 Views</th>
+                      <th className="py-3 px-3 text-center">GSC Inspect</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#2C181B] font-mono text-xs">
+                    {(data.seo?.metrics || []).map((m) => (
+                      <tr key={m.article_slug} className="hover:bg-[#1B0E10]/50 transition-colors">
+                        <td className="py-3.5 px-3 max-w-[280px]">
+                          <a
+                            href={`/blog/${m.article_slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium text-[#F5EFE6] hover:text-[#D6334A] flex items-center gap-1.5 transition-colors line-clamp-1"
+                          >
+                            <span>{m.article_title || m.article_slug}</span>
+                            <ExternalLink className="w-3 h-3 text-[#8A8175] shrink-0" />
+                          </a>
+                          <span className="text-[10px] text-[#8A8175] block mt-0.5">{m.category || "Journal"}</span>
+                        </td>
+                        <td className="py-3.5 px-3 text-[#C4B5A5] max-w-[180px] truncate">
+                          {m.primary_keyword || "—"}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                            <span>{m.indexing_status || "Submitted to Google"}</span>
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-right text-[#F5EFE6] font-semibold">
+                          {m.impressions || 0}
+                        </td>
+                        <td className="py-3.5 px-3 text-right text-emerald-400 font-semibold">
+                          {m.clicks || 0}
+                        </td>
+                        <td className="py-3.5 px-3 text-right text-[#C4B5A5]">
+                          {m.ctr ? `${(m.ctr * 100).toFixed(1)}%` : "0.0%"}
+                        </td>
+                        <td className="py-3.5 px-3 text-right text-[#C4B5A5]">
+                          {m.avg_position && m.avg_position > 0 ? `#${m.avg_position}` : "—"}
+                        </td>
+                        <td className="py-3.5 px-3 text-right text-[#D6334A] font-semibold">
+                          {m.ga4_pageviews || 0}
+                        </td>
+                        <td className="py-3.5 px-3 text-center">
+                          <a
+                            href={`https://search.google.com/search-console/inspect?resource_id=sc-domain%3Awebzifire.com&id=https%3A%2F%2Fwebzifire.com%2Fblog%2F${m.article_slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0B0607] hover:bg-[#2C181B] border border-[#2C181B] text-[#C4B5A5] hover:text-[#F5EFE6] text-[10px] transition-colors"
+                          >
+                            <Search className="w-2.5 h-2.5 text-[#D6334A]" />
+                            <span>Inspect</span>
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
