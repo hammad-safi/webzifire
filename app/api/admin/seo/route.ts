@@ -133,8 +133,12 @@ export async function GET() {
 
     // Deduplicate latest metric snapshot per article slug
     const latestMetricsBySlug = new Map<string, Record<string, unknown>>();
+    let siteTotalMetric: Record<string, any> | null = null;
+
     for (const m of seoMetrics) {
-      if (!latestMetricsBySlug.has(m.article_slug)) {
+      if (m.article_slug === "_site_total") {
+        if (!siteTotalMetric) siteTotalMetric = m;
+      } else if (!latestMetricsBySlug.has(m.article_slug)) {
         latestMetricsBySlug.set(m.article_slug, { ...m });
       }
     }
@@ -169,6 +173,9 @@ export async function GET() {
     }
 
     const latestMetrics = Array.from(latestMetricsBySlug.values());
+    const totalSiteViews = siteTotalMetric ? Number(siteTotalMetric.ga4_pageviews || 0) : 0;
+    const articleViews = latestMetrics.reduce((s, m) => s + Number(m.ga4_pageviews || 0), 0);
+
     const seoTotals = {
       impressions: latestMetrics.reduce((s, m) => s + Number(m.impressions || 0), 0),
       clicks: latestMetrics.reduce((s, m) => s + Number(m.clicks || 0), 0),
@@ -181,7 +188,9 @@ export async function GET() {
               ).toFixed(1)
             )
           : 0,
-      ga4Pageviews: latestMetrics.reduce((s, m) => s + Number(m.ga4_pageviews || 0), 0),
+      ga4Pageviews: totalSiteViews > 0 ? totalSiteViews : articleViews,
+      totalSiteViews: Math.max(totalSiteViews, articleViews),
+      articlePageviews: articleViews,
     };
 
     return NextResponse.json({

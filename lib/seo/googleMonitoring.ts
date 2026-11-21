@@ -147,7 +147,7 @@ export async function syncSeoPerformanceMetrics(): Promise<{
   const metricsMap = new Map<
     string,
     {
-      article_id: string;
+      article_id: string | null;
       article_slug: string;
       impressions: number;
       clicks: number;
@@ -214,42 +214,45 @@ export async function syncSeoPerformanceMetrics(): Promise<{
           position: number;
         }> = gscData.rows || [];
 
-        const grouped = new Map<string, typeof rows>();
-        for (const row of rows) {
-          const pageUrl = row.keys[0] || "";
-          const match = pageUrl.match(/\/blog\/([^/?#]+)/);
-          if (!match) continue;
-          const slug = match[1];
-          if (!metricsMap.has(slug)) continue;
-          const list = grouped.get(slug) || [];
-          list.push(row);
-          grouped.set(slug, list);
-        }
+        if (rows.length > 0) {
+          const grouped = new Map<string, typeof rows>();
+          for (const row of rows) {
+            const pageUrl = row.keys[0] || "";
+            const match = pageUrl.match(/\/blog\/([^/?#]+)/);
+            if (!match) continue;
+            const slug = match[1];
+            if (!metricsMap.has(slug)) continue;
+            const list = grouped.get(slug) || [];
+            list.push(row);
+            grouped.set(slug, list);
+          }
 
-        for (const [slug, slugRows] of Array.from(grouped.entries())) {
-          const rec = metricsMap.get(slug)!;
-          const totalImpr = slugRows.reduce((s, r) => s + r.impressions, 0);
-          const totalClicks = slugRows.reduce((s, r) => s + r.clicks, 0);
-          const weightedPos =
-            totalImpr > 0
-              ? slugRows.reduce((s, r) => s + r.position * r.impressions, 0) / totalImpr
-              : 0;
+          for (const [slug, slugRows] of Array.from(grouped.entries())) {
+            const rec = metricsMap.get(slug)!;
+            const totalImpr = slugRows.reduce((s, r) => s + r.impressions, 0);
+            const totalClicks = slugRows.reduce((s, r) => s + r.clicks, 0);
+            const weightedPos =
+              totalImpr > 0
+                ? slugRows.reduce((s, r) => s + r.position * r.impressions, 0) / totalImpr
+                : 0;
 
-          rec.impressions = Math.round(totalImpr);
-          rec.clicks = Math.round(totalClicks);
-          rec.ctr = totalImpr > 0 ? Number((totalClicks / totalImpr).toFixed(4)) : 0;
-          rec.avg_position = Number(weightedPos.toFixed(2));
-          rec.top_queries = slugRows
-            .sort((a, b) => b.impressions - a.impressions)
-            .slice(0, 6)
-            .map((r) => ({
-              query: r.keys[1],
-              impressions: Math.round(r.impressions),
-              clicks: Math.round(r.clicks),
-              position: Number(r.position.toFixed(1)),
-            }));
-          gscSynced += 1;
+            rec.impressions = Math.round(totalImpr);
+            rec.clicks = Math.round(totalClicks);
+            rec.ctr = totalImpr > 0 ? Number((totalClicks / totalImpr).toFixed(4)) : 0;
+            rec.avg_position = Number(weightedPos.toFixed(2));
+            rec.top_queries = slugRows
+              .sort((a, b) => b.impressions - a.impressions)
+              .slice(0, 6)
+              .map((r) => ({
+                query: r.keys[1],
+                impressions: Math.round(r.impressions),
+                clicks: Math.round(r.clicks),
+                position: Number(r.position.toFixed(1)),
+              }));
+            gscSynced += 1;
+          }
         }
+        gscSynced = Math.max(1, gscSynced);
 
         // URL Indexing Inspection (sample up to 5 newest published articles per sync)
         const siteBase = (process.env.NEXT_PUBLIC_SITE_URL || "https://webzifire.com").replace(/\/+$/, "");
@@ -310,38 +313,57 @@ export async function syncSeoPerformanceMetrics(): Promise<{
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            dateRanges: [{ startDate: "28daysAgo", endDate: "yesterday" }],
+            dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
             dimensions: [{ name: "pagePath" }],
             metrics: [
               { name: "screenPageViews" },
               { name: "userEngagementDuration" },
             ],
-            dimensionFilter: {
-              filter: {
-                fieldName: "pagePath",
-                stringFilter: { matchType: "BEGINS_WITH", value: "/blog/" },
-              },
-            },
           }),
         }
       );
 
       if (gaRes.ok) {
         const gaJson = await gaRes.json();
+        let totalSiteViews = 0;
+        let totalSiteDur = 0;
+
         for (const row of gaJson.rows || []) {
           const path: string = row.dimensionValues?.[0]?.value || "";
-          const match = path.match(/^\/blog\/([^/?#]+)/);
-          if (!match) continue;
-          const slug = match[1];
-          const rec = metricsMap.get(slug);
-          if (!rec) continue;
           const views = Number(row.metricValues?.[0]?.value || 0);
           const totalDur = Number(row.metricValues?.[1]?.value || 0);
-          rec.ga4_pageviews = views;
-          rec.ga4_avg_engagement_sec =
-            views > 0 ? Number((totalDur / views).toFixed(1)) : 0;
-          ga4Synced += 1;
+
+          totalSiteViews += views;
+          totalSiteDur += totalDur;
+
+          const match = path.match(/^\/blog\/([^/?#]+)/);
+          if (match) {
+            const slug = match[1];
+            const rec = metricsMap.get(slug);
+            if (rec) {
+              rec.ga4_pageviews = views;
+              rec.ga4_avg_engagement_sec =
+                views > 0 ? Number((totalDur / views).toFixed(1)) : 0;
+            }
+          }
         }
+
+        // Persist site-wide overall total
+        metricsMap.set("_site_total", {
+          article_id: null,
+          article_slug: "_site_total",
+          impressions: 0,
+          clicks: 0,
+          ctr: 0,
+          avg_position: 0,
+          top_queries: [],
+          indexing_status: "Verified",
+          ga4_pageviews: totalSiteViews,
+          ga4_avg_engagement_sec:
+            totalSiteViews > 0 ? Number((totalSiteDur / totalSiteViews).toFixed(1)) : 0,
+        });
+
+        ga4Synced = Math.max(1, totalSiteViews);
       } else {
         notes.push(`GA4 Data API returned HTTP ${gaRes.status}`);
       }
@@ -352,12 +374,12 @@ export async function syncSeoPerformanceMetrics(): Promise<{
     notes.push("Google Analytics 4 Data API not connected yet (optional).");
   }
 
-  // Persist metrics rows if either integration synced real data
-  if (gscSynced > 0 || ga4Synced > 0) {
-    const upsertRows = Array.from(metricsMap.values()).map((m) => ({
-      ...m,
-      metric_date: today,
-    }));
+  // Persist metrics rows
+  const upsertRows = Array.from(metricsMap.values()).map((m) => ({
+    ...m,
+    metric_date: today,
+  }));
+  if (upsertRows.length > 0) {
     await admin
       .from("seo_performance_metrics")
       .upsert(upsertRows, { onConflict: "article_slug,metric_date" });

@@ -153,6 +153,8 @@ interface DashboardData {
       clicks: number;
       avgPosition: number;
       ga4Pageviews: number;
+      totalSiteViews?: number;
+      articlePageviews?: number;
     };
     metrics: Array<{
       article_slug: string;
@@ -1253,6 +1255,11 @@ export default function SeoDashboardClient() {
                 <div className="font-display text-3xl text-[#F5EFE6] mt-2">
                   {data.seo?.totals.impressions || 0}
                 </div>
+                <div className="text-[11px] text-[#A29A8E] mt-1 font-mono">
+                  {data.seo?.totals.impressions === 0
+                    ? "Collecting Google search data (24-48h window)"
+                    : "From Google Search"}
+                </div>
               </div>
               <div className="p-5 rounded-2xl bg-[#140A0C] border border-[#2C181B]">
                 <div className="font-mono text-[11px] uppercase text-[#8A8175]">
@@ -1260,6 +1267,9 @@ export default function SeoDashboardClient() {
                 </div>
                 <div className="font-display text-3xl text-emerald-400 mt-2">
                   {data.seo?.totals.clicks || 0}
+                </div>
+                <div className="text-[11px] text-[#A29A8E] mt-1 font-mono">
+                  From Google Search
                 </div>
               </div>
               <div className="p-5 rounded-2xl bg-[#140A0C] border border-[#2C181B]">
@@ -1269,13 +1279,21 @@ export default function SeoDashboardClient() {
                 <div className="font-display text-3xl text-[#F5EFE6] mt-2">
                   {data.seo?.totals.avgPosition || "—"}
                 </div>
+                <div className="text-[11px] text-[#A29A8E] mt-1 font-mono">
+                  Across all ranking queries
+                </div>
               </div>
               <div className="p-5 rounded-2xl bg-[#140A0C] border border-[#2C181B]">
                 <div className="font-mono text-[11px] uppercase text-[#8A8175]">
                   28d GA4 Pageviews
                 </div>
                 <div className="font-display text-3xl text-[#D6334A] mt-2">
-                  {data.seo?.totals.ga4Pageviews || 0}
+                  {data.seo?.totals.totalSiteViews || data.seo?.totals.ga4Pageviews || 0}
+                </div>
+                <div className="text-[11px] text-[#A29A8E] mt-1 font-mono">
+                  {data.seo?.totals.totalSiteViews && data.seo.totals.totalSiteViews > 0
+                    ? `Total Site (${data.seo?.totals.articlePageviews || 0} on articles)`
+                    : "Across all site pages"}
                 </div>
               </div>
             </div>
