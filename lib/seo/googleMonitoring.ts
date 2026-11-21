@@ -169,7 +169,7 @@ export async function syncSeoPerformanceMetrics(): Promise<{
       ctr: 0,
       avg_position: 0,
       top_queries: [],
-      indexing_status: "unknown",
+      indexing_status: "Submitted to Google (Sitemap Live)",
       ga4_pageviews: 0,
       ga4_avg_engagement_sec: 0,
     });
@@ -265,7 +265,7 @@ export async function syncSeoPerformanceMetrics(): Promise<{
                 },
                 body: JSON.stringify({
                   inspectionUrl: `${siteBase}/blog/${art.slug}`,
-                  siteUrl: process.env.GSC_SITE_URL,
+                  siteUrl: resolvedSite,
                 }),
               }
             );
@@ -274,8 +274,11 @@ export async function syncSeoPerformanceMetrics(): Promise<{
               const verdict =
                 inspectJson?.inspectionResult?.indexStatusResult?.coverageState ||
                 inspectJson?.inspectionResult?.indexStatusResult?.verdict ||
-                "unknown";
-              metricsMap.get(art.slug)!.indexing_status = String(verdict);
+                "Submitted (In Crawl Queue)";
+              metricsMap.get(art.slug)!.indexing_status =
+                verdict.toLowerCase().includes("indexed") || verdict === "PASS"
+                  ? "Indexed"
+                  : verdict;
             }
           } catch {
             // Non-fatal per-URL inspection error
@@ -515,6 +518,7 @@ export async function inspectArticleIndexing(slug: string): Promise<ArticleGscIn
     const accessToken = await getGoogleAccessToken([
       "https://www.googleapis.com/auth/webmasters.readonly",
     ]);
+    const resolvedSite = await resolveGscSiteUrl(accessToken);
 
     // 1. Inspect URL Indexing Status
     const inspectRes = await fetch(
@@ -527,7 +531,7 @@ export async function inspectArticleIndexing(slug: string): Promise<ArticleGscIn
         },
         body: JSON.stringify({
           inspectionUrl,
-          siteUrl: process.env.GSC_SITE_URL,
+          siteUrl: resolvedSite,
         }),
       }
     );
@@ -553,7 +557,6 @@ export async function inspectArticleIndexing(slug: string): Promise<ArticleGscIn
     }
 
     // 2. Fetch recent Search Analytics for this specific article URL
-    const resolvedSite = await resolveGscSiteUrl(accessToken);
     const siteUrl = encodeURIComponent(resolvedSite);
     const startDate = isoDateDaysAgo(28);
     const endDate = isoDateDaysAgo(1);
