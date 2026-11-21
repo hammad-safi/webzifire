@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import MobileQuickAction from "@/components/MobileQuickAction";
 import { services } from "@/data/services";
 import { faqs } from "@/data/faqs";
 
@@ -120,6 +121,7 @@ export default function RootLayout({
         </div>
         <Navbar />
         {children}
+        <MobileQuickAction />
       </body>
     </html>
   );

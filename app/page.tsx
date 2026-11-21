@@ -2,6 +2,7 @@ import React from "react";
 import HeroSection from "@/components/HeroSection";
 import TrackRecord from "@/components/TrackRecord";
 import CapabilitiesGrid from "@/components/CapabilitiesGrid";
+import ProjectEstimator from "@/components/ProjectEstimator";
 import ProcessTimeline from "@/components/ProcessTimeline";
 import PortfolioSection from "@/components/PortfolioSection";
 import FaqAccordion from "@/components/FaqAccordion";
@@ -21,6 +22,11 @@ export default function Home() {
 
         {/* Section 3: Connected Capabilities (Twelve Services) */}
         <CapabilitiesGrid />
+
+        {/* Section 3.5: Interactive Scope & Architecture Estimator */}
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 py-8">
+          <ProjectEstimator />
+        </div>
 
         {/* Section 4: Process Timeline (Discover, Define, Build, Improve) */}
         <ProcessTimeline />

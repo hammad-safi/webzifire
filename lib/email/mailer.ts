@@ -686,3 +686,131 @@ export async function sendContentRefreshDigestEmail(
     html,
   });
 }
+
+export interface LeadAlertPayload {
+  referenceId: string;
+  name: string;
+  email: string;
+  number?: string;
+  services?: string[];
+  stage?: string;
+  timeline?: string;
+  budget?: string;
+  message?: string;
+  source?: string;
+}
+
+/**
+ * Dispatches an instant executive alert when a client submits an inquiry or briefs the AI bot.
+ */
+export async function sendLeadAlertEmail(params: {
+  lead: LeadAlertPayload;
+  recipientEmail?: string | null;
+}): Promise<{ messageId: string; to: string }> {
+  const to = getApprovalRecipientEmail(params.recipientEmail);
+  if (!to) {
+    throw new Error("ADMIN_APPROVAL_EMAIL is not configured.");
+  }
+
+  const { lead } = params;
+  const baseUrl = getSiteBaseUrl();
+  const cleanPhone = (lead.number || "").replace(/[^0-9]/g, "");
+  const waUrl = cleanPhone
+    ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello ${lead.name}! This is WebziFire. Thank you for your inquiry [${lead.referenceId}].`)}`
+    : null;
+
+  const servicesText = Array.isArray(lead.services) && lead.services.length > 0
+    ? lead.services.join(", ")
+    : "General Software Engineering";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Client Inquiry — ${escapeHtml(lead.name)}</title>
+</head>
+<body style="margin:0;padding:24px;background-color:#0B0607;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#F5EFE6;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="640" cellspacing="0" cellpadding="0" style="max-width:640px;width:100%;background-color:#140A0C;border:1px solid #2C181B;border-radius:18px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+          <tr>
+            <td style="padding:28px 32px;background:linear-gradient(135deg,#260B11 0%,#140A0C 70%);border-bottom:1px solid #2C181B;">
+              <div style="display:inline-block;padding:4px 12px;border-radius:999px;background-color:#D6334A;color:#FFFFFF;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">
+                ✦ NEW CLIENT LEAD · ${escapeHtml(lead.referenceId)}
+              </div>
+              <h1 style="margin:14px 0 6px 0;font-size:24px;line-height:1.2;color:#F5EFE6;font-weight:700;">
+                ${escapeHtml(lead.name)} requested a project review
+              </h1>
+              <div style="font-size:12px;color:#A29A8E;font-family:monospace;">
+                Captured via ${escapeHtml(lead.source || "WebziFire Website")} · ${new Date().toUTCString()}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 32px;">
+              <!-- Lead Core Info Cards -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:20px;">
+                <tr>
+                  <td width="50%" style="padding:14px;background-color:#1B0E11;border:1px solid #2C181B;border-radius:12px;vertical-align:top;">
+                    <div style="font-size:10px;text-transform:uppercase;color:#8A8175;font-weight:700;letter-spacing:1px;margin-bottom:4px;">Client Contact</div>
+                    <div style="font-size:15px;font-weight:600;color:#F5EFE6;margin-bottom:2px;">${escapeHtml(lead.name)}</div>
+                    <div style="font-size:13px;color:#D6334A;"><a href="mailto:${escapeHtml(lead.email)}" style="color:#D6334A;text-decoration:none;">${escapeHtml(lead.email)}</a></div>
+                    ${lead.number ? `<div style="font-size:12px;color:#C4B5A5;margin-top:4px;">Tel/WA: ${escapeHtml(lead.number)}</div>` : ""}
+                  </td>
+                  <td width="10"></td>
+                  <td width="50%" style="padding:14px;background-color:#1B0E11;border:1px solid #2C181B;border-radius:12px;vertical-align:top;">
+                    <div style="font-size:10px;text-transform:uppercase;color:#8A8175;font-weight:700;letter-spacing:1px;margin-bottom:4px;">Project Scope & Budget</div>
+                    <div style="font-size:13px;font-weight:600;color:#F5EFE6;margin-bottom:2px;">Budget: <span style="color:#10b981;">${escapeHtml(lead.budget || "Not Specified")}</span></div>
+                    <div style="font-size:12px;color:#C4B5A5;">Timeline: ${escapeHtml(lead.timeline || "Flexible")}</div>
+                    <div style="font-size:12px;color:#C4B5A5;margin-top:2px;">Stage: ${escapeHtml(lead.stage || "Ready to build")}</div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Services Requested -->
+              <div style="margin-bottom:20px;padding:14px;background-color:#1B0E11;border:1px solid #2C181B;border-radius:12px;">
+                <div style="font-size:10px;text-transform:uppercase;color:#8A8175;font-weight:700;letter-spacing:1px;margin-bottom:6px;">Target Services</div>
+                <div style="font-size:13px;color:#F5EFE6;line-height:1.5;">${escapeHtml(servicesText)}</div>
+              </div>
+
+              <!-- Message / Brief -->
+              <div style="margin-bottom:26px;padding:16px;background-color:#1B0E11;border:1px solid #2C181B;border-radius:12px;">
+                <div style="font-size:10px;text-transform:uppercase;color:#8A8175;font-weight:700;letter-spacing:1px;margin-bottom:6px;">Project Notes & Requirements</div>
+                <div style="font-size:13px;color:#E8DFD1;line-height:1.6;white-space:pre-wrap;">${escapeHtml(lead.message || "No additional message provided.")}</div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid #2C181B;">
+                <a href="mailto:${escapeHtml(lead.email)}?subject=Re:%20WebziFire%20Project%20Inquiry%20[${escapeHtml(lead.referenceId)}]" style="display:inline-block;padding:12px 24px;background-color:#D6334A;color:#FFFFFF;text-decoration:none;border-radius:999px;font-weight:700;font-size:13px;margin:0 6px 8px 6px;">
+                  Reply via Email ✉
+                </a>
+                ${waUrl ? `
+                <a href="${waUrl}" style="display:inline-block;padding:12px 24px;background-color:#25D366;color:#0B0607;text-decoration:none;border-radius:999px;font-weight:700;font-size:13px;margin:0 6px 8px 6px;">
+                  Open WhatsApp Chat 💬
+                </a>` : ""}
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:16px 32px;background-color:#0F0709;border-top:1px solid #2C181B;text-align:center;font-size:11px;color:#8A8175;">
+              WebziFire Enterprise Portal · Automated Real-time Lead Dispatcher · <a href="${baseUrl}" style="color:#D6334A;text-decoration:none;">webzifire.com</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+  return dispatchEmail({
+    to,
+    subject: `🚨 [New Lead ${lead.referenceId}] ${lead.name} — ${servicesText.slice(0, 40)}`,
+    html,
+  });
+}

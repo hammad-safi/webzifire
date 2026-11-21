@@ -1,8 +1,10 @@
 import React from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import Footer from "@/components/Footer";
 import WebziFireBot from "@/components/WebziFireBot";
 import { articles as staticArticles } from "@/data/articles";
+import { services } from "@/data/services";
 import { getJournalBySlug } from "@/lib/journals";
 import {
   ArrowLeft,
@@ -372,6 +374,61 @@ export default async function ArticleDetailPage({
                   "Performance and user conversion are not downstream decorations. By integrating strict latency thresholds and Obsidian design discipline from day zero, enterprise portals achieve compounding business momentum."}
               </p>
             </div>
+
+            {/* Relevant WebziFire Engineering Capability Card (Contextual Internal Linking) */}
+            {(() => {
+              const matchedService =
+                services.find((s) => {
+                  const p = (article.category || "").toLowerCase();
+                  const slug = s.slug.toLowerCase();
+                  const title = s.title.toLowerCase();
+                  return (
+                    p.includes(slug) ||
+                    slug.includes(p) ||
+                    p.includes(s.category.toLowerCase()) ||
+                    title.includes(p)
+                  );
+                }) || services[0];
+
+              return (
+                <div className="mt-8 p-6 rounded-2xl bg-[#140A0C] border border-[#2C181B] flex flex-col md:flex-row items-center gap-6">
+                  <div className="w-full md:w-48 h-32 rounded-xl overflow-hidden shrink-0 border border-[#2C181B] bg-black">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/services/${matchedService.slug}.jpg`}
+                      alt={matchedService.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="font-mono text-[11px] uppercase tracking-wider text-[#D6334A] font-semibold">
+                      Relevant Engineering Capability
+                    </div>
+                    <h4 className="font-display text-lg text-[#F5EFE6] font-medium">
+                      {matchedService.title}
+                    </h4>
+                    <p className="font-sans text-xs text-[#A29A8E] line-clamp-2 leading-relaxed">
+                      {matchedService.shortDescription}
+                    </p>
+                    <div className="flex items-center gap-4 pt-2">
+                      <Link
+                        href={`/services/${matchedService.slug}`}
+                        className="font-mono text-xs text-[#D6334A] hover:underline flex items-center gap-1"
+                      >
+                        <span>View Service Specs</span>
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </Link>
+                      <Link
+                        href={`/book?service=${encodeURIComponent(matchedService.title)}`}
+                        className="font-mono text-xs text-[#F5EFE6] hover:text-white underline underline-offset-4"
+                      >
+                        Scope Project ↗
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Footer Navigation CTA */}

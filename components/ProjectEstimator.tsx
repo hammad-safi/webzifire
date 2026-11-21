@@ -1,390 +1,532 @@
 "use client";
 
-import React, { useState } from "react";
-import { CheckCircle2, ArrowRight, ArrowLeft, Shield, Sparkles, Send, Clock, DollarSign, Calculator } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import {
+  Code2,
+  Smartphone,
+  Layers,
+  Cpu,
+  Sparkles,
+  ShoppingBag,
+  CheckCircle2,
+  ArrowRight,
+  ShieldCheck,
+  Clock,
+  Send,
+  Loader2,
+  Calendar,
+  DollarSign,
+  HelpCircle,
+} from "lucide-react";
+
+interface ServiceOption {
+  id: string;
+  label: string;
+  desc: string;
+  icon: React.ElementType;
+  baseWeeks: number;
+  baseMinPrice: number;
+  baseMaxPrice: number;
+  recommendedStack: string;
+}
+
+const SERVICE_OPTIONS: ServiceOption[] = [
+  {
+    id: "web-app",
+    label: "Web App & Portal",
+    desc: "Sub-second Next.js portal with reactive UI and high conversion",
+    icon: Code2,
+    baseWeeks: 5,
+    baseMinPrice: 4500,
+    baseMaxPrice: 9500,
+    recommendedStack: "Next.js 14 · TypeScript · Tailwind CSS · Supabase Postgres",
+  },
+  {
+    id: "mobile-app",
+    label: "Mobile Application",
+    desc: "Cross-platform iOS & Android with offline-first architecture",
+    icon: Smartphone,
+    baseWeeks: 8,
+    baseMinPrice: 7500,
+    baseMaxPrice: 15000,
+    recommendedStack: "React Native / Expo · TypeScript · Node.js · Fast APIs",
+  },
+  {
+    id: "erp-enterprise",
+    label: "Custom ERP & Backoffice",
+    desc: "Bespoke operations, inventory & logistics without per-seat licensing",
+    icon: Layers,
+    baseWeeks: 10,
+    baseMinPrice: 12000,
+    baseMaxPrice: 25000,
+    recommendedStack: "Next.js · PostgreSQL · RBAC Security · Automated Workflows",
+  },
+  {
+    id: "ai-agents",
+    label: "AI Agents & Automation",
+    desc: "Custom LLM agents, RAG pipelines, and automated business workflows",
+    icon: Cpu,
+    baseWeeks: 4,
+    baseMinPrice: 5000,
+    baseMaxPrice: 11000,
+    recommendedStack: "Python / Node.js · Vector Databases · LLM Orchestration",
+  },
+  {
+    id: "saas-product",
+    label: "Multi-Tenant SaaS",
+    desc: "Scalable subscription software with billing, teams, and analytics",
+    icon: Sparkles,
+    baseWeeks: 9,
+    baseMinPrice: 9500,
+    baseMaxPrice: 20000,
+    recommendedStack: "Next.js · Supabase Auth · Stripe Billing · Postgres Multi-Tenancy",
+  },
+  {
+    id: "ecommerce-pos",
+    label: "Custom Commerce / POS",
+    desc: "High-throughput store or retail system with real-time sync",
+    icon: ShoppingBag,
+    baseWeeks: 7,
+    baseMinPrice: 6500,
+    baseMaxPrice: 14000,
+    recommendedStack: "Next.js · Headless API · Stripe Payments · Realtime Sync",
+  },
+];
+
+const SCALES = [
+  { id: "mvp", label: "MVP / Prototype", multiplier: 1.0, weeksAdd: 0, desc: "Fast-to-market, core features for launch" },
+  { id: "growth", label: "Production & Growth", multiplier: 1.45, weeksAdd: 3, desc: "Built for scaling users, robust automated testing & CI/CD" },
+  { id: "enterprise", label: "Enterprise Grade", multiplier: 2.1, weeksAdd: 6, desc: "High availability, SOC2/HIPAA ready, audit logs, 99.99% SLA" },
+];
+
+const FEATURE_MODULES = [
+  { id: "auth-rbac", label: "Auth & Multi-Role Permissions", weeksAdd: 1, priceAdd: 800 },
+  { id: "payments-billing", label: "Stripe Billing & Subscriptions", weeksAdd: 1.5, priceAdd: 1400 },
+  { id: "realtime-chat", label: "Real-Time WebSockets & Notifications", weeksAdd: 1.5, priceAdd: 1200 },
+  { id: "ai-rag", label: "Custom AI Assistant & Knowledge Base", weeksAdd: 2, priceAdd: 2200 },
+  { id: "integrations", label: "Third-Party API & Webhook Connectors", weeksAdd: 1, priceAdd: 1000 },
+  { id: "admin-analytics", label: "Executive Analytics & Reporting Command Center", weeksAdd: 1.5, priceAdd: 1500 },
+];
 
 export default function ProjectEstimator() {
-  const [step, setStep] = useState(1);
-  const [selectedServices, setSelectedServices] = useState<string[]>([
-    "Website & Web Application Development",
+  const [selectedService, setSelectedService] = useState<string>("web-app");
+  const [selectedScale, setSelectedScale] = useState<string>("growth");
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([
+    "auth-rbac",
+    "payments-billing",
   ]);
-  const [stage, setStage] = useState<string>("Enterprise Redesign");
-  const [timeline, setTimeline] = useState<string>("4-8 Weeks");
-  const [budget, setBudget] = useState<string>("$15K - $30K");
-  const [clientInfo, setClientInfo] = useState({
-    name: "",
-    email: "",
-    company: "",
-    notes: "",
-  });
-  const [submitted, setSubmitted] = useState(false);
+  const [velocity, setVelocity] = useState<"standard" | "accelerated">("standard");
 
-  const availableServices = [
-    { name: "Website & Web Application Development", baseWeeks: 4, desc: "High-performance Next.js marketing & business portals" },
-    { name: "Mobile Application Development", baseWeeks: 6, desc: "Native iOS & Android apps with offline synchronization" },
-    { name: "ERP & Enterprise Software", baseWeeks: 10, desc: "Custom HR, inventory, procurement & finance platforms" },
-    { name: "POS & Retail Management Systems", baseWeeks: 6, desc: "High-velocity retail POS with cloud & offline sync" },
-    { name: "SaaS Product Development", baseWeeks: 8, desc: "Multi-tenant cloud architecture & Stripe subscriptions" },
-    { name: "CRM & Business Applications", baseWeeks: 5, desc: "Custom pipelines, appointment booking & dashboards" },
-    { name: "E-commerce Development", baseWeeks: 5, desc: "Online stores, marketplaces & 1-page checkout funnels" },
-    { name: "Backend & API Development", baseWeeks: 4, desc: "High-throughput Node.js APIs, PostgreSQL, MySQL & MongoDB architectures" },
-    { name: "Desktop Application Development", baseWeeks: 6, desc: "Windows & Electron desktop software with local DB" },
-    { name: "AI-Powered Application Development", baseWeeks: 4, desc: "OpenAI integrations, AI chatbots & smart workflows" },
-    { name: "UI/UX Design", baseWeeks: 3, desc: "World-class Figma design systems & interactive prototypes" },
-    { name: "Software Maintenance & Optimization", baseWeeks: 2, desc: "Speed optimization, bug fixing & 24/7 technical SLA" },
-  ];
+  // Client proposal form
+  const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientNotes, setClientNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedRef, setSubmittedRef] = useState<string | null>(null);
 
-  const stages = [
-    { title: "Greenfield MVP", desc: "Building a brand new platform from ground zero" },
-    { title: "Enterprise Redesign", desc: "Overhauling an existing system to boost conversions" },
-    { title: "Platform Re-architecture", desc: "Migrating legacy stacks to modern Next.js & cloud" },
-    { title: "Growth & Compounding", desc: "Ongoing dedicated engineering & search sprint cycles" },
-  ];
-
-  const timelines = ["2-4 Weeks (Rapid Sprint)", "4-8 Weeks (Standard)", "8-16 Weeks (Multi-Phase)", "Ongoing Strategic Partnership"];
-  const budgets = ["$10K - $25K", "$25K - $50K", "$50K - $100K", "$100K+"];
-
-  const [referenceId, setReferenceId] = useState<string>("WBZ-984210");
-  const [submitting, setSubmitting] = useState(false);
-
-  const toggleService = (srv: string) => {
-    if (selectedServices.includes(srv)) {
-      if (selectedServices.length > 1) {
-        setSelectedServices(selectedServices.filter((s) => s !== srv));
-      }
-    } else {
-      setSelectedServices([...selectedServices, srv]);
-    }
+  const toggleFeature = (id: string) => {
+    setSelectedFeatures((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientInfo.name || !clientInfo.email) {
-      setStep(4);
-      return;
+  const calculation = useMemo(() => {
+    const service = SERVICE_OPTIONS.find((s) => s.id === selectedService) || SERVICE_OPTIONS[0];
+    const scale = SCALES.find((s) => s.id === selectedScale) || SCALES[0];
+
+    const extraFeaturePrice = selectedFeatures.reduce((acc, fId) => {
+      const feat = FEATURE_MODULES.find((m) => m.id === fId);
+      return acc + (feat ? feat.priceAdd : 0);
+    }, 0);
+
+    const extraFeatureWeeks = selectedFeatures.reduce((acc, fId) => {
+      const feat = FEATURE_MODULES.find((m) => m.id === fId);
+      return acc + (feat ? feat.weeksAdd : 0);
+    }, 0);
+
+    const rawMin = Math.round((service.baseMinPrice * scale.multiplier + extraFeaturePrice) / 500) * 500;
+    const rawMax = Math.round((service.baseMaxPrice * scale.multiplier + extraFeaturePrice * 1.3) / 500) * 500;
+
+    let totalWeeks = Math.max(3, Math.round(service.baseWeeks + scale.weeksAdd + extraFeatureWeeks));
+    if (velocity === "accelerated") {
+      totalWeeks = Math.max(3, Math.round(totalWeeks * 0.7));
     }
-    setSubmitting(true);
+
+    return {
+      service,
+      scale,
+      minPrice: rawMin,
+      maxPrice: rawMax,
+      weeks: totalWeeks,
+      recommendedStack: service.recommendedStack,
+    };
+  }, [selectedService, selectedScale, selectedFeatures, velocity]);
+
+  const handleSubmitScope = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientName || !clientEmail || isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
+      const featureNames = selectedFeatures
+        .map((fId) => FEATURE_MODULES.find((m) => m.id === fId)?.label)
+        .filter(Boolean);
+
       const res = await fetch("/api/inquire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...clientInfo,
-          services: selectedServices,
-          stage,
-          timeline,
-          budget,
+          name: clientName,
+          email: clientEmail,
+          number: clientPhone,
+          services: [calculation.service.label],
+          stage: calculation.scale.label,
+          timeline: `${calculation.weeks} Weeks (${velocity === "accelerated" ? "Accelerated Sprint" : "Standard"})`,
+          budget: `$${calculation.minPrice.toLocaleString()} – $${calculation.maxPrice.toLocaleString()} USD`,
+          message: `Scope: ${calculation.service.label} (${calculation.scale.label})
+Selected Modules: ${featureNames.join(", ") || "Standard"}
+Velocity: ${velocity === "accelerated" ? "Accelerated Sprint (40% faster)" : "Standard Sprint"}
+Recommended Stack: ${calculation.recommendedStack}
+Client Notes: ${clientNotes || "None"}`,
+          source: "Interactive Project Estimator",
         }),
       });
+
       const data = await res.json();
-      if (data.referenceId) {
-        setReferenceId(data.referenceId);
+      if (data.success) {
+        setSubmittedRef(data.referenceId || "WBZ-ESTIMATE");
       }
-    } catch {
-      // Graceful fallback to client generated ticket
+    } catch (err) {
+      console.error("Scope submit error", err);
     } finally {
-      setSubmitting(false);
-      setSubmitted(true);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-[#140A0C] rounded-3xl border border-[#2C181B] p-6 sm:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.85)] relative overflow-hidden">
-      {/* Top Progress Stepper */}
-      <div className="flex items-center justify-between pb-6 mb-8 border-b border-[#2C181B]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#1B0E10] border border-[#2C181B] flex items-center justify-center text-[#D6334A] font-mono text-sm font-bold">
-            0{step}
-          </div>
-          <div className="flex flex-col">
-            <span className="font-display font-light text-lg text-[#F5EFE6]">
-              {step === 1 && "Select Required Capabilities"}
-              {step === 2 && "Project Stage & Architecture Scope"}
-              {step === 3 && "Timeline & Investment Target"}
-              {step === 4 && "Contact Details & Brief Synthesis"}
-            </span>
-            <span className="font-mono text-xs text-[#8A8175]">
-              Step {step} of 4 · Senior Architectural Scoping
-            </span>
-          </div>
-        </div>
+    <section
+      id="project-estimator"
+      className="w-full rounded-3xl bg-[#140A0C] border border-[#2C181B] p-6 sm:p-10 lg:p-12 relative overflow-hidden shadow-[0_12px_48px_rgba(0,0,0,0.7)]"
+    >
+      {/* Background Ambient Glow */}
+      <div
+        className="absolute -top-32 -right-32 w-96 h-96 bg-[radial-gradient(circle,rgba(214,51,74,0.12),transparent_70%)] pointer-events-none blur-3xl"
+        aria-hidden="true"
+      />
 
-        <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs text-[#8A8175]">
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className={`w-8 h-1.5 rounded-full transition-all ${
-                i <= step ? "bg-[#D6334A] shadow-[0_0_8px_#ff5352]" : "bg-[#2C181B]"
-              }`}
-            />
-          ))}
+      {/* Header */}
+      <div className="max-w-3xl mb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1F0F13] border border-[#2C181B] text-[#D6334A] font-mono text-xs font-semibold uppercase tracking-wider mb-3">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Interactive Scope &amp; Architecture Estimator</span>
         </div>
+        <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl text-[#F5EFE6] font-normal tracking-tight">
+          Configure Your System. <em className="italic text-[#D6334A]">Calculate Your Sprint.</em>
+        </h2>
+        <p className="font-sans text-sm sm:text-base text-[#A29A8E] mt-2 leading-relaxed">
+          Select your target platform, scale, and feature modules. Our engine provides an immediate
+          architectural blueprint, estimated delivery window, and transparent pricing benchmark.
+        </p>
       </div>
 
-      {submitted ? (
-        <div className="py-12 flex flex-col items-center text-center gap-4 animate-fade-in">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-2 shadow-[0_0_24px_rgba(52,211,153,0.3)]">
-            <CheckCircle2 className="w-8 h-8" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Interactive Selectors (7 Cols) */}
+        <div className="lg:col-span-7 flex flex-col gap-8">
+          {/* Step 1: Platform Selection */}
+          <div>
+            <label className="block font-mono text-xs uppercase tracking-wider text-[#C4B5A5] mb-3">
+              Step 01 · Select Target Platform
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {SERVICE_OPTIONS.map((srv) => {
+                const Icon = srv.icon;
+                const isSelected = selectedService === srv.id;
+                return (
+                  <button
+                    key={srv.id}
+                    type="button"
+                    onClick={() => setSelectedService(srv.id)}
+                    className={`text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? "bg-[#220E13] border-[#D6334A] shadow-[0_0_20px_rgba(214,51,74,0.25)]"
+                        : "bg-[#0B0607]/70 border-[#2C181B] hover:border-[#3D2226] hover:bg-[#140A0C]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div
+                        className={`p-2 rounded-lg ${
+                          isSelected ? "bg-[#D6334A] text-white" : "bg-[#1B0E11] text-[#A29A8E]"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      {isSelected && <CheckCircle2 className="w-4 h-4 text-[#D6334A]" />}
+                    </div>
+                    <div>
+                      <div className="font-display text-sm font-medium text-[#F5EFE6]">
+                        {srv.label}
+                      </div>
+                      <div className="font-sans text-xs text-[#8A8175] mt-1 line-clamp-2 leading-relaxed">
+                        {srv.desc}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <h3 className="font-display font-light text-3xl font-bold text-[#F5EFE6]">
-            Project Scope Successfully Submitted
-          </h3>
-          <p className="font-sans text-base text-[#C4B5A5] max-w-lg leading-relaxed">
-            Thank you, <span className="text-[#F5EFE6] font-semibold">{clientInfo.name}</span>. Our senior technical engineering directors are reviewing your brief and specifications.
-          </p>
-          <div className="p-4 rounded-xl bg-[#1B0E10] border border-[#2C181B] max-w-md w-full text-left font-mono text-xs space-y-1.5 mt-2">
-            <div className="text-[#D6334A] font-semibold">Scope Reference ID: <span>{referenceId}</span></div>
-            <div className="text-[#8A8175]">Target Services: <span className="text-[#F5EFE6] font-medium">{selectedServices.join(", ")}</span></div>
-            <div className="text-[#8A8175]">Engagement Stage: <span className="text-[#F5EFE6] font-medium">{stage}</span></div>
-            <div className="text-[#8A8175]">Target Timeline: <span className="text-[#F5EFE6] font-medium">{timeline}</span></div>
-            <div className="text-[#8A8175]">Formal Blueprint Turnaround: <span className="text-emerald-400 font-semibold">&lt; 24 Hours</span></div>
+
+          {/* Step 2: Scale & Maturity */}
+          <div>
+            <label className="block font-mono text-xs uppercase tracking-wider text-[#C4B5A5] mb-3">
+              Step 02 · Select Scale &amp; Production Maturity
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {SCALES.map((scale) => {
+                const isSelected = selectedScale === scale.id;
+                return (
+                  <button
+                    key={scale.id}
+                    type="button"
+                    onClick={() => setSelectedScale(scale.id)}
+                    className={`p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                      isSelected
+                        ? "bg-[#220E13] border-[#D6334A] shadow-[0_0_15px_rgba(214,51,74,0.2)]"
+                        : "bg-[#0B0607]/70 border-[#2C181B] hover:border-[#3D2226]"
+                    }`}
+                  >
+                    <div className="font-display text-xs font-semibold text-[#F5EFE6] flex items-center justify-between">
+                      <span>{scale.label}</span>
+                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#D6334A]" />}
+                    </div>
+                    <p className="text-[11px] text-[#8A8175] mt-1 leading-snug">{scale.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <a
-            href="/"
-            className="mt-6 px-8 py-3 rounded-full bg-[#1B0E10] hover:bg-surface-bright text-[#F5EFE6] border border-[#2C181B] font-mono text-xs uppercase tracking-wider transition-colors"
-          >
-            Return to Homepage
-          </a>
+
+          {/* Step 3: Feature Modules */}
+          <div>
+            <label className="block font-mono text-xs uppercase tracking-wider text-[#C4B5A5] mb-3">
+              Step 03 · Specialized Capabilities &amp; Integrations
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {FEATURE_MODULES.map((feat) => {
+                const isSelected = selectedFeatures.includes(feat.id);
+                return (
+                  <button
+                    key={feat.id}
+                    type="button"
+                    onClick={() => toggleFeature(feat.id)}
+                    className={`flex items-center justify-between p-3 rounded-lg border text-left text-xs transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-[#220E13]/80 border-[#D6334A]/80 text-[#F5EFE6]"
+                        : "bg-[#0B0607]/60 border-[#2C181B] text-[#A29A8E] hover:border-[#3D2226]"
+                    }`}
+                  >
+                    <span className="font-sans font-medium pr-2">{feat.label}</span>
+                    <span
+                      className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${
+                        isSelected ? "bg-[#D6334A] border-[#D6334A] text-white" : "border-[#3D2226]"
+                      }`}
+                    >
+                      {isSelected && <CheckCircle2 className="w-3 h-3" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Step 4: Sprint Velocity */}
+          <div>
+            <label className="block font-mono text-xs uppercase tracking-wider text-[#C4B5A5] mb-3">
+              Step 04 · Target Delivery Velocity
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setVelocity("standard")}
+                className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                  velocity === "standard"
+                    ? "bg-[#220E13] border-[#D6334A]"
+                    : "bg-[#0B0607]/70 border-[#2C181B] text-[#8A8175]"
+                }`}
+              >
+                <div className="font-display text-xs font-semibold text-[#F5EFE6]">
+                  Standard Milestones
+                </div>
+                <div className="text-[11px] text-[#8A8175] mt-0.5">
+                  Sequential 2-week agile sprints
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVelocity("accelerated")}
+                className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                  velocity === "accelerated"
+                    ? "bg-[#220E13] border-[#D6334A]"
+                    : "bg-[#0B0607]/70 border-[#2C181B] text-[#8A8175]"
+                }`}
+              >
+                <div className="font-display text-xs font-semibold text-[#F5EFE6] flex items-center gap-1.5">
+                  <span>Accelerated Sprint</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D6334A]/20 text-[#D6334A] uppercase font-mono">
+                    Fast Track
+                  </span>
+                </div>
+                <div className="text-[11px] text-[#8A8175] mt-0.5">
+                  Dedicated parallel engineering pods
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div>
-          {/* STEP 1: Select Services */}
-          {step === 1 && (
-            <div className="space-y-6 animate-fade-in">
-              <p className="font-sans text-sm text-[#8A8175]">
-                Select one focused discipline or combine multiple connected capabilities into a cohesive enterprise solution.
+
+        {/* Right Column: Live Output & 1-Click Proposal (5 Cols) */}
+        <div className="lg:col-span-5 bg-[#0B0607] rounded-2xl border border-[#2C181B] p-6 lg:p-7 flex flex-col gap-6 lg:sticky lg:top-28 shadow-xl">
+          {/* Header Badge */}
+          <div className="flex items-center justify-between pb-4 border-b border-[#2C181B]">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-wider text-[#8A8175]">
+                Architecture Estimate
+              </div>
+              <div className="font-display text-base font-semibold text-[#F5EFE6] mt-0.5">
+                {calculation.service.label}
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-medium flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" />
+              Fixed Scope Ready
+            </span>
+          </div>
+
+          {/* Key Metrics: Timeline & Investment */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-[#140A0C] border border-[#2C181B]">
+              <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#8A8175] uppercase">
+                <Clock className="w-3.5 h-3.5 text-[#D6334A]" />
+                <span>Est. Timeline</span>
+              </div>
+              <div className="font-display text-2xl font-bold text-[#F5EFE6] mt-2">
+                {calculation.weeks}{" "}
+                <span className="text-xs font-normal text-[#8A8175]">Weeks</span>
+              </div>
+              <div className="text-[10px] text-[#8A8175] font-mono mt-1">
+                {velocity === "accelerated" ? "Accelerated pod" : "Agile delivery"}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#140A0C] border border-[#2C181B]">
+              <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#8A8175] uppercase">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Investment Est.</span>
+              </div>
+              <div className="font-display text-xl font-bold text-emerald-400 mt-2">
+                ${calculation.minPrice.toLocaleString()}{" "}
+                <span className="text-xs font-normal text-[#8A8175]">
+                  – ${calculation.maxPrice.toLocaleString()}
+                </span>
+              </div>
+              <div className="text-[10px] text-[#8A8175] font-mono mt-1">USD · All IP Handover</div>
+            </div>
+          </div>
+
+          {/* Recommended Stack */}
+          <div className="p-3.5 rounded-xl bg-[#140A0C] border border-[#2C181B]">
+            <div className="font-mono text-[10px] uppercase text-[#8A8175] tracking-wider mb-1.5 flex items-center gap-1.5">
+              <Code2 className="w-3 h-3 text-[#D6334A]" />
+              <span>Recommended Architecture Stack</span>
+            </div>
+            <div className="font-mono text-xs text-[#E8DFD1] leading-relaxed">
+              {calculation.recommendedStack}
+            </div>
+          </div>
+
+          {/* Direct Scope Dispatch Form */}
+          {submittedRef ? (
+            <div className="p-5 rounded-xl bg-[#140A0C] border border-emerald-500/40 text-center animate-in fade-in duration-300">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center mb-3">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div className="font-display text-base font-semibold text-[#F5EFE6]">
+                Scope Proposal Dispatched!
+              </div>
+              <p className="text-xs text-[#A29A8E] mt-1.5 leading-relaxed">
+                Reference ID: <strong className="text-emerald-400 font-mono">{submittedRef}</strong>.
+                Our lead architect will review your configuration and email your formal sprint
+                roadmap within 24 hours.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {availableServices.map((srv) => {
-                  const isSelected = selectedServices.includes(srv.name);
-                  return (
-                    <div
-                      key={srv.name}
-                      onClick={() => toggleService(srv.name)}
-                      className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                        isSelected
-                          ? "bg-[#1B0E10] border-primary-coral/60 shadow-coral-sm"
-                          : "bg-[#140A0C] border border-[#2C181B] hover:border-border-hover"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-display font-light font-semibold text-sm text-[#F5EFE6]">
-                          {srv.name}
-                        </span>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
-                            isSelected
-                              ? "bg-[#D6334A] border-[#D6334A] text-white"
-                              : "border-[#2C181B]"
-                          }`}
-                        >
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                        </div>
-                      </div>
-                      <p className="font-sans text-xs text-[#8A8175] mt-2">{srv.desc}</p>
-                    </div>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={() => setSubmittedRef(null)}
+                className="mt-4 text-xs font-mono text-[#D6334A] hover:underline cursor-pointer"
+              >
+                Configure another project ↗
+              </button>
             </div>
-          )}
-
-          {/* STEP 2: Project Stage */}
-          {step === 2 && (
-            <div className="space-y-6 animate-fade-in">
-              <p className="font-sans text-sm text-[#8A8175]">
-                What is the current maturity and strategic objective of this project?
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {stages.map((stg) => {
-                  const isSelected = stage === stg.title;
-                  return (
-                    <div
-                      key={stg.title}
-                      onClick={() => setStage(stg.title)}
-                      className={`p-5 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                        isSelected
-                          ? "bg-[#1B0E10] border-primary-coral/60 shadow-coral-sm"
-                          : "bg-[#140A0C] border border-[#2C181B] hover:border-border-hover"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-display font-light text-base text-[#F5EFE6]">
-                          {stg.title}
-                        </span>
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected
-                              ? "bg-[#D6334A] border-[#D6334A] text-white"
-                              : "border-[#2C181B]"
-                          }`}
-                        >
-                          {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                        </div>
-                      </div>
-                      <p className="font-sans text-xs text-[#8A8175] mt-3">{stg.desc}</p>
-                    </div>
-                  );
-                })}
+          ) : (
+            <form onSubmit={handleSubmitScope} className="flex flex-col gap-3">
+              <div className="font-mono text-[11px] text-[#C4B5A5] uppercase tracking-wider mb-1">
+                Lock In This Scope &amp; Get Proposal
               </div>
-            </div>
-          )}
+              <input
+                type="text"
+                required
+                placeholder="Your Full Name *"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-lg bg-[#140A0C] border border-[#2C181B] focus:border-[#D6334A] focus:outline-none text-xs text-[#F5EFE6] placeholder-[#8A8175] transition-colors"
+              />
+              <input
+                type="email"
+                required
+                placeholder="Work Email *"
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-lg bg-[#140A0C] border border-[#2C181B] focus:border-[#D6334A] focus:outline-none text-xs text-[#F5EFE6] placeholder-[#8A8175] transition-colors"
+              />
+              <input
+                type="tel"
+                placeholder="WhatsApp / Phone (for instant chat)"
+                value={clientPhone}
+                onChange={(e) => setClientPhone(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-lg bg-[#140A0C] border border-[#2C181B] focus:border-[#D6334A] focus:outline-none text-xs text-[#F5EFE6] placeholder-[#8A8175] transition-colors"
+              />
+              <textarea
+                rows={2}
+                placeholder="Additional project requirements or goals (optional)..."
+                value={clientNotes}
+                onChange={(e) => setClientNotes(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-lg bg-[#140A0C] border border-[#2C181B] focus:border-[#D6334A] focus:outline-none text-xs text-[#F5EFE6] placeholder-[#8A8175] transition-colors resize-none"
+              />
 
-          {/* STEP 3: Timeline & Budget */}
-          {step === 3 && (
-            <div className="space-y-8 animate-fade-in">
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wider text-[#8A8175] font-semibold block mb-3">
-                  Target Launch Window
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {timelines.map((tl) => (
-                    <button
-                      key={tl}
-                      type="button"
-                      onClick={() => setTimeline(tl)}
-                      className={`p-3.5 rounded-xl border text-left font-mono text-xs transition-all ${
-                        timeline === tl
-                          ? "bg-[#1B0E10] border-primary-coral text-[#F5EFE6] shadow-coral-sm"
-                          : "bg-[#140A0C] border border-[#2C181B] text-[#8A8175] hover:text-[#F5EFE6]"
-                      }`}
-                    >
-                      {tl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="font-mono text-xs uppercase tracking-wider text-[#8A8175] font-semibold block mb-3">
-                  Target Investment Tier
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {budgets.map((bg) => (
-                    <button
-                      key={bg}
-                      type="button"
-                      onClick={() => setBudget(bg)}
-                      className={`p-3.5 rounded-xl border text-center font-mono text-xs transition-all ${
-                        budget === bg
-                          ? "bg-[#1B0E10] border-primary-coral text-[#F5EFE6] shadow-coral-sm"
-                          : "bg-[#140A0C] border border-[#2C181B] text-[#8A8175] hover:text-[#F5EFE6]"
-                      }`}
-                    >
-                      {bg}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: Client Info & Submit */}
-          {step === 4 && (
-            <form onSubmit={handleSubmit} className="space-y-4 animate-fade-in">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="font-mono text-xs text-[#8A8175] block mb-1.5">
-                    Your Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={clientInfo.name}
-                    onChange={(e) => setClientInfo({ ...clientInfo, name: e.target.value })}
-                    placeholder="e.g. Alex Morgan"
-                    className="w-full px-4 py-3 rounded-xl bg-[#1B0E10] border border-[#2C181B] text-sm text-[#F5EFE6] placeholder:text-[#8A8175] focus:outline-none focus:border-primary-coral"
-                  />
-                </div>
-                <div>
-                  <label className="font-mono text-xs text-[#8A8175] block mb-1.5">
-                    Business Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={clientInfo.email}
-                    onChange={(e) => setClientInfo({ ...clientInfo, email: e.target.value })}
-                    placeholder="alex@company.com"
-                    className="w-full px-4 py-3 rounded-xl bg-[#1B0E10] border border-[#2C181B] text-sm text-[#F5EFE6] placeholder:text-[#8A8175] focus:outline-none focus:border-primary-coral"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-mono text-xs text-[#8A8175] block mb-1.5">
-                  Company / Organization
-                </label>
-                <input
-                  type="text"
-                  value={clientInfo.company}
-                  onChange={(e) => setClientInfo({ ...clientInfo, company: e.target.value })}
-                  placeholder="e.g. Nexus Enterprises"
-                  className="w-full px-4 py-3 rounded-xl bg-[#1B0E10] border border-[#2C181B] text-sm text-[#F5EFE6] placeholder:text-[#8A8175] focus:outline-none focus:border-primary-coral"
-                />
-              </div>
-
-              <div>
-                <label className="font-mono text-xs text-[#8A8175] block mb-1.5">
-                  Brief Overview &amp; Key Goals *
-                </label>
-                <textarea
-                  rows={3}
-                  required
-                  value={clientInfo.notes}
-                  onChange={(e) => setClientInfo({ ...clientInfo, notes: e.target.value })}
-                  placeholder="Describe your current bottleneck, desired deliverables, and key success metrics..."
-                  className="w-full px-4 py-3 rounded-xl bg-[#1B0E10] border border-[#2C181B] text-sm text-[#F5EFE6] placeholder:text-[#8A8175] focus:outline-none focus:border-primary-coral resize-none"
-                />
-              </div>
-
-              {/* Summary Pill Preview */}
-              <div className="p-4 rounded-xl bg-[#0B0607] border border-[#2C181B] font-mono text-xs text-[#C4B5A5] flex flex-wrap gap-x-6 gap-y-2">
-                <span>Selected: <strong className="text-[#D6334A]">{selectedServices.length} Disciplines</strong></span>
-                <span>Stage: <strong className="text-[#F5EFE6]">{stage}</strong></span>
-                <span>Target Window: <strong className="text-[#F5EFE6]">{timeline}</strong></span>
-                <span>Tier: <strong className="text-[#F5EFE6]">{budget}</strong></span>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full mt-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#D6334A] hover:bg-[#b02237] disabled:opacity-60 text-white font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-200 cursor-pointer shadow-[0_4px_20px_rgba(214,51,74,0.35)] active:scale-[0.99]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Transmitting Scope...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Request Formal Scope &amp; Estimate</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+              <div className="text-[10px] text-center text-[#8A8175] font-mono mt-0.5">
+                ✦ 100% Confidential · Mutual NDA Guaranteed · 24h Review
               </div>
             </form>
           )}
-
-          {/* Stepper Navigation Buttons */}
-          <div className="pt-8 border-t border-[#2C181B] flex items-center justify-between gap-4 mt-8">
-            {step > 1 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step - 1)}
-                className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#8A8175] hover:text-[#F5EFE6] px-5 py-2.5 rounded-full border border-[#2C181B] transition-colors cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
-            ) : (
-              <div />
-            )}
-
-            {step < 4 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step + 1)}
-                className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider font-semibold text-[#F5EFE6] bg-[#D6334A] hover:bg-[#ff3b3b] px-7 py-3 rounded-full shadow-coral-sm transition-all cursor-pointer"
-              >
-                <span>Continue</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider font-semibold text-[#F5EFE6] bg-[#D6334A] hover:bg-[#ff3b3b] px-8 py-3.5 rounded-full shadow-coral-md transition-all cursor-pointer"
-              >
-                <span>Submit Scope to Directors</span>
-                <Send className="w-4 h-4" />
-              </button>
-            )}
-          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </section>
   );
 }
