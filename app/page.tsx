@@ -11,7 +11,7 @@ import WebziFireBot from "@/components/WebziFireBot";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
+    <div className="flex flex-col min-h-screen bg-[#070405] text-[#FAF7F2]">
       <main className="w-full pt-20 bg-transparent">
         {/* Section 1: Hero with live telemetry and coordinates */}
         <HeroSection />

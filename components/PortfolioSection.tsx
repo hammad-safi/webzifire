@@ -55,46 +55,46 @@ export default function PortfolioSection() {
 
   return (
     <section
-      className="w-full py-24 lg:py-32 bg-[#0B0607] border-y border-[#2C181B] relative"
+      className="w-full py-24 lg:py-32 bg-[#070405] border-y border-white/[0.08] relative"
       id="selected-work"
       aria-labelledby="portfolio-heading"
     >
-      {/* Hero-Style Ambient Crimson Halo */}
+      {/* Precision Obsidian Ambient Crimson Halo */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] max-w-[95vw] h-[560px] bg-[radial-gradient(ellipse_at_top,rgba(214,51,74,0.26),transparent_65%)]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] max-w-[95vw] h-[560px] bg-[radial-gradient(ellipse_at_top,rgba(224,50,75,0.20),transparent_65%)]" />
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col gap-12 relative z-10">
-        {/* Section Header Matching CodeFier's .portfolio-header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[#2C181B]">
+        {/* Section Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/[0.08]">
           <div className="flex flex-col gap-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#140A0C] border border-[#2C181B] w-fit">
-              <span className="text-[#D6334A] text-[10px]">✦</span>
-              <span className="font-mono text-xs uppercase tracking-widest text-[#8A8175] font-semibold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] w-fit">
+              <span className="text-[#E0324B] text-[10px]">✦</span>
+              <span className="font-mono text-xs uppercase tracking-widest text-[#D6CEC5] font-semibold">
                 Selected Work · {caseStudies.length} Production Systems
               </span>
             </div>
             <h2
               id="portfolio-heading"
-              className="font-display font-light text-3xl sm:text-5xl lg:text-[3.25rem] text-[#F5EFE6] tracking-tight leading-[1.08]"
+              className="font-display font-light text-3xl sm:text-5xl lg:text-[3.25rem] text-[#FAF7F2] tracking-tight leading-[1.08]"
             >
               Work that makes the
               <br />
-              <span className="display-italic font-normal text-[#C4B5A5]">
+              <span className="display-italic font-normal text-[#D6CEC5]">
                 capability visible.
               </span>
             </h2>
           </div>
-          <p className="font-sans text-base text-[#C4B5A5]/80 max-w-md leading-relaxed">
+          <p className="font-sans text-base text-[#D6CEC5] max-w-md leading-relaxed">
             Explore WebziFire production deployments across Web &amp; SaaS, Mobile Apps, Enterprise ERP &amp; POS, E-Commerce, AI Automation, and Desktop / Design Systems.
           </p>
         </div>
 
-        {/* Mobile Filter Tabs (Horizontal Scrollable Rail - 100% responsive, no text clipping) */}
+        {/* Mobile Filter Tabs */}
         <div
           role="tablist"
           aria-label="Portfolio categories mobile rail"
-          className="flex md:hidden overflow-x-auto no-scrollbar gap-2 p-1.5 bg-[#140A0C] border border-[#2C181B] rounded-2xl scroll-smooth"
+          className="flex md:hidden overflow-x-auto no-scrollbar gap-2 p-1.5 bg-[#0E0608]/90 border border-white/[0.08] rounded-2xl scroll-smooth"
         >
           {tabsWithCounts.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -107,18 +107,18 @@ export default function PortfolioSection() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`shrink-0 flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-mono text-xs transition-all duration-200 cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? "bg-[#D6334A] text-white font-semibold shadow-[0_2px_14px_rgba(214,51,74,0.45)]"
-                    : "bg-[#1B0E10] text-[#8A8175] hover:text-[#F5EFE6] hover:border-[#D6334A]/40 border border-[#2C181B]"
+                    ? "bg-[#E0324B] text-white font-semibold shadow-[0_2px_14px_rgba(224,50,75,0.45)]"
+                    : "bg-white/[0.04] text-[#D6CEC5] hover:text-[#FAF7F2] hover:border-[#E0324B]/40 border border-white/[0.08]"
                 }`}
               >
-                <span className={isActive ? "text-white/80" : "text-[#D6334A] font-bold"}>
+                <span className={isActive ? "text-white/80" : "text-[#E0324B] font-bold"}>
                   {tab.num}
                 </span>
                 <span className="font-sans font-medium">{tab.label}</span>
                 {tab.important && <span className="text-[10px] text-amber-300">★</span>}
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
-                    isActive ? "bg-black/30 text-white" : "bg-[#25181A] text-[#C4B5A5]"
+                    isActive ? "bg-black/30 text-white" : "bg-white/[0.08] text-[#FAF7F2]"
                   }`}
                 >
                   {tab.count}
@@ -229,24 +229,11 @@ export default function PortfolioSection() {
           {filteredProjects.map((project) => (
             <article
               key={project.id}
-              className="group bg-[#140A0C] hover:bg-[#180C0E] rounded-2xl border border-[#2C181B] overflow-hidden hover:border-[#D6334A]/50 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_48px_rgba(214,51,74,0.14)]"
+              className="group bg-[#140A0C] rounded-2xl border border-[#2C181B] overflow-hidden hover:border-[#423330] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between shadow-[0_12px_32px_rgba(0,0,0,0.6)]"
             >
               <div>
-                {/* Media Container with App Window Frame */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#090707] border-b border-[#2C181B] pt-6">
-                  {/* Window Chrome Top Bar */}
-                  <div className="absolute top-0 left-0 right-0 h-6 bg-[#0E0708] z-10 flex items-center justify-between px-3 border-b border-[#2C181B] select-none">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#C4B5A5]/40" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
-                    </div>
-                    <span className="font-mono text-[9px] text-[#8A8175] group-hover:text-[#D8CFC2] transition-colors truncate max-w-[160px]">
-                      {project.id}.webzifire.app
-                    </span>
-                    <div className="w-3" />
-                  </div>
-
+                {/* Media Container */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#090707]">
                   <button
                     type="button"
                     onClick={() => setSelectedProject(project)}
