@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Footer from "@/components/Footer";
 import WebziFireBot from "@/components/WebziFireBot";
 import { caseStudies } from "@/data/caseStudies";
+import DeviceMockup from "@/components/ui/DeviceMockup";
 import {
   ArrowLeft,
   ArrowRight,
@@ -144,13 +145,13 @@ export default function CaseStudyDetailPage({
             </p>
           </div>
 
-          {/* Hero Image */}
-          <div className="aspect-[16/9] max-h-[680px] w-full rounded-3xl overflow-hidden border border-[#2C181B] shadow-elevated-card relative bg-[#090707]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          {/* Hero Image Device Mockup */}
+          <div className="w-full">
+            <DeviceMockup
               src={project.image}
               alt={project.title}
-              className="w-full h-full object-cover"
+              type={project.category === "Mobile Apps" ? "phone" : "browser"}
+              urlDisplay={`https://${project.id.replace(/-(management|system|platform|portal|app|shopping|fleet|ecommerce|accounting|design)/g, "")}.webzifire.app`}
             />
           </div>
 

@@ -181,6 +181,12 @@ export default function WebziFireBot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const handleOpenBot = () => setIsOpen(true);
+    window.addEventListener("open-webzifire-bot", handleOpenBot);
+    return () => window.removeEventListener("open-webzifire-bot", handleOpenBot);
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
@@ -298,11 +304,11 @@ export default function WebziFireBot() {
 
   return (
     <>
-      {/* Floating Bottom-Right Launcher Orb */}
+      {/* Floating Bottom-Right Launcher Orb (Desktop) */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 group flex items-center justify-center p-3 rounded-full bg-[#140A0C] border border-[#2C181B] hover:border-[#D6334A]/60 shadow-[0_4px_28px_rgba(214,51,74,0.35)] hover:shadow-[0_4px_36px_rgba(214,51,74,0.6)] hover:scale-105 transition-all duration-300 cursor-pointer"
+        className="hidden md:flex fixed bottom-6 right-6 z-50 group items-center justify-center p-3 rounded-full bg-[#140A0C] border border-[#2C181B] hover:border-[#D6334A]/60 shadow-[0_4px_28px_rgba(214,51,74,0.35)] hover:shadow-[0_4px_36px_rgba(214,51,74,0.6)] hover:scale-105 transition-all duration-300 cursor-pointer"
         aria-label="Open WebziFire AI Assistant"
       >
         <div className="relative">

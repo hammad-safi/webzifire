@@ -229,11 +229,24 @@ export default function PortfolioSection() {
           {filteredProjects.map((project) => (
             <article
               key={project.id}
-              className="group bg-[#140A0C] rounded-2xl border border-[#2C181B] overflow-hidden hover:border-[#423330] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between shadow-[0_12px_32px_rgba(0,0,0,0.6)]"
+              className="group bg-[#140A0C] hover:bg-[#180C0E] rounded-2xl border border-[#2C181B] overflow-hidden hover:border-[#D6334A]/50 hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between shadow-[0_12px_32px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_48px_rgba(214,51,74,0.14)]"
             >
               <div>
-                {/* Media Container */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#090707]">
+                {/* Media Container with App Window Frame */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#090707] border-b border-[#2C181B] pt-6">
+                  {/* Window Chrome Top Bar */}
+                  <div className="absolute top-0 left-0 right-0 h-6 bg-[#0E0708] z-10 flex items-center justify-between px-3 border-b border-[#2C181B] select-none">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#C4B5A5]/40" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
+                    </div>
+                    <span className="font-mono text-[9px] text-[#8A8175] group-hover:text-[#D8CFC2] transition-colors truncate max-w-[160px]">
+                      {project.id}.webzifire.app
+                    </span>
+                    <div className="w-3" />
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => setSelectedProject(project)}

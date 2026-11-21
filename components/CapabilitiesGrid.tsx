@@ -118,7 +118,7 @@ export default function CapabilitiesGrid() {
                           {service.title}
                         </h3>
                       </a>
-                      <p className="font-sans text-sm sm:text-base text-[#C4B5A5]/80 leading-relaxed mt-4 max-w-xl">
+                      <p className="font-sans text-sm sm:text-base text-[#D8CFC2] leading-relaxed mt-4 max-w-xl">
                         {service.shortDescription}
                       </p>
                     </div>
@@ -151,7 +151,7 @@ export default function CapabilitiesGrid() {
                         {service.title}
                       </h3>
                     </a>
-                    <p className="font-sans text-xs sm:text-sm text-[#C4B5A5]/80 leading-relaxed mt-3">
+                    <p className="font-sans text-xs sm:text-sm text-[#D8CFC2] leading-relaxed mt-3">
                       {service.shortDescription}
                     </p>
 
