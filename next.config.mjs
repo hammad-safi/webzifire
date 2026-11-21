@@ -25,6 +25,11 @@ const nextConfig = {
         destination: "/about",
         permanent: true,
       },
+      {
+        source: "/calculator",
+        destination: "/estimate",
+        permanent: true,
+      },
     ];
   },
 };

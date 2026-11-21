@@ -33,9 +33,39 @@ export async function generateMetadata({
   const service = services.find((s) => s.slug === params.slug);
   if (!service) return { title: "Service Not Found | WebziFire" };
 
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL || "https://webzifire.com"
+  ).replace(/\/+$/, "");
+  const canonicalUrl = `${baseUrl}/services/${service.slug}`;
+  const bannerUrl = `${baseUrl}/services/${service.slug}.jpg`;
+
   return {
     title: `${service.title} | WebziFire Enterprise Capabilities`,
     description: service.shortDescription,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: `${service.title} | WebziFire Enterprise Capabilities`,
+      description: service.shortDescription,
+      url: canonicalUrl,
+      type: "website",
+      siteName: "WebziFire",
+      images: [
+        {
+          url: bannerUrl,
+          alt: service.title,
+          width: 1200,
+          height: 675,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${service.title} | WebziFire`,
+      description: service.shortDescription,
+      images: [bannerUrl],
+    },
   };
 }
 
@@ -47,12 +77,58 @@ export default function ServiceDetailPage({
   const service = services.find((s) => s.slug === params.slug);
   if (!service) notFound();
 
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL || "https://webzifire.com"
+  ).replace(/\/+$/, "");
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${baseUrl}/services/${service.slug}#service`,
+    name: service.title,
+    serviceType: service.category,
+    description: service.shortDescription,
+    provider: {
+      "@type": "Organization",
+      name: "WebziFire",
+      url: baseUrl,
+      logo: `${baseUrl}/webzifire-logo.png`,
+    },
+    areaServed: [
+      { "@type": "Country", name: "United States" },
+      { "@type": "Country", name: "United Kingdom" },
+      { "@type": "Country", name: "United Arab Emirates" },
+    ],
+    image: `${baseUrl}/services/${service.slug}.jpg`,
+    offers: {
+      "@type": "Offer",
+      url: `${baseUrl}/book?service=${encodeURIComponent(service.title)}`,
+      availability: "https://schema.org/InStock",
+      priceCurrency: "USD",
+    },
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: `${service.title} Deliverables`,
+      itemListElement: service.deliverables.map((d) => ({
+        "@type": "Offer",
+        itemOffered: {
+          "@type": "Service",
+          name: d,
+        },
+      })),
+    },
+  };
+
   const relatedWorks = caseStudies.filter(
     (c) => c.relatedServiceSlug === service.slug
   );
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <main className="w-full pt-28 pb-20">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col gap-14">
           {/* Back link */}
