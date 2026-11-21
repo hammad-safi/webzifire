@@ -135,8 +135,9 @@ DO NOT target, duplicate, or cannibalize any of the above keywords! You MUST sel
 
 Task:
 1. Research current high-intent technical and commercial topics that international founders, CTOs, and operations leaders actively search for related to "${chosenPillar.pillar}" in 2026.
-2. Examine competing articles currently ranking for this angle and identify 4–5 concrete gaps they miss (e.g., real architecture trade-offs, PostgreSQL/MySQL/Supabase data modeling, total cost of ownership, security/compliance, realistic implementation phases).
-3. Recommend ONE sharp, authoritative, non-duplicate article topic with a fresh primary keyword that does NOT cannibalize our existing content, 5–7 semantically related secondary keywords, search intent, target SEO title, meta description, and 6–7 key outline sections.
+2. Focus specifically on high-intent buyer and evaluation queries (e.g., Total Cost of Ownership analysis, custom development vs bloated per-seat SaaS, migration & modernization blueprints, performance/latency benchmarks, enterprise architecture decision guides).
+3. Examine competing articles currently ranking for this angle and identify 4–5 concrete gaps they miss (e.g., real architecture trade-offs, PostgreSQL/MySQL/Supabase data modeling, total cost of ownership, security/compliance, realistic implementation phases).
+4. Recommend ONE sharp, authoritative, non-duplicate article topic with a fresh primary keyword that does NOT cannibalize our existing content, 5–7 semantically related secondary keywords, search intent, target SEO title, meta description, and 6–7 key outline sections.
 
 CRITICAL RULES:
 - NEVER invent, guess, or estimate monthly search volumes, keyword difficulty numbers, CPCs, or fake percentages.

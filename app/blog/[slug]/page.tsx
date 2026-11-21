@@ -6,6 +6,7 @@ import WebziFireBot from "@/components/WebziFireBot";
 import { articles as staticArticles } from "@/data/articles";
 import { services } from "@/data/services";
 import { getJournalBySlug } from "@/lib/journals";
+import { linkifyContent } from "@/lib/seo/keywordLinks";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -131,6 +132,7 @@ export default async function ArticleDetailPage({
 
   const hasStructuredBlocks =
     Array.isArray(article.contentBlocks) && article.contentBlocks.length > 0;
+  const usedServiceSlugs = new Set<string>();
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
@@ -239,7 +241,7 @@ export default async function ArticleDetailPage({
           {/* Article Body */}
           <div className="space-y-6 pt-2 text-base sm:text-lg text-[#C4B5A5] font-sans leading-relaxed">
             <p className="font-medium text-[#F5EFE6] text-lg sm:text-xl leading-relaxed italic border-l-2 border-[#D6334A] pl-4">
-              {article.summary}
+              {linkifyContent(article.summary, usedServiceSlugs)}
             </p>
 
             {hasStructuredBlocks
@@ -279,7 +281,7 @@ export default async function ArticleDetailPage({
                           {block.items.map((item, i) => (
                             <li key={i} className="flex items-start gap-3">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#D6334A] mt-2.5 shrink-0" />
-                              <span>{item}</span>
+                              <span>{linkifyContent(item, usedServiceSlugs)}</span>
                             </li>
                           ))}
                         </ul>
@@ -299,15 +301,15 @@ export default async function ArticleDetailPage({
                               : "Engineering Note")}
                         </div>
                         <p className="text-sm sm:text-base text-[#D8CFC2] leading-relaxed">
-                          {block.text}
+                          {linkifyContent(block.text || "", usedServiceSlugs)}
                         </p>
                       </div>
                     );
                   }
-                  return <p key={idx}>{block.text}</p>;
+                  return <p key={idx}>{linkifyContent(block.text || "", usedServiceSlugs)}</p>;
                 })
               : article.content.map((paragraph, idx) => (
-                  <p key={idx}>{paragraph}</p>
+                  <p key={idx}>{linkifyContent(paragraph, usedServiceSlugs)}</p>
                 ))}
 
             {/* Related Internal Capabilities & Resources */}
