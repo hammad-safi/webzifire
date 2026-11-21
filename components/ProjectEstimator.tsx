@@ -145,8 +145,7 @@ export default function ProjectEstimator() {
       return acc + (feat ? feat.weeksAdd : 0);
     }, 0);
 
-    const rawMin = Math.round((service.baseMinPrice * scale.multiplier + extraFeaturePrice) / 100) * 100;
-    const rawMax = Math.round((service.baseMaxPrice * scale.multiplier + extraFeaturePrice * 1.2) / 100) * 100;
+    const rawPrice = Math.round((service.baseMinPrice * scale.multiplier + extraFeaturePrice) / 100) * 100;
 
     let totalWeeks = Math.max(3, Math.round(service.baseWeeks + scale.weeksAdd + extraFeatureWeeks));
     if (velocity === "accelerated") {
@@ -156,8 +155,7 @@ export default function ProjectEstimator() {
     return {
       service,
       scale,
-      minPrice: rawMin,
-      maxPrice: rawMax,
+      price: rawPrice,
       weeks: totalWeeks,
       recommendedStack: service.recommendedStack,
     };
@@ -183,10 +181,11 @@ export default function ProjectEstimator() {
           services: [calculation.service.label],
           stage: calculation.scale.label,
           timeline: `${calculation.weeks} Weeks (${velocity === "accelerated" ? "Accelerated Sprint" : "Standard"})`,
-          budget: `$${calculation.minPrice.toLocaleString()} – $${calculation.maxPrice.toLocaleString()} USD`,
+          budget: `$${calculation.price.toLocaleString()} USD (Negotiable)`,
           message: `Scope: ${calculation.service.label} (${calculation.scale.label})
 Selected Modules: ${featureNames.join(", ") || "Standard"}
 Velocity: ${velocity === "accelerated" ? "Accelerated Sprint (40% faster)" : "Standard Sprint"}
+Target Price: $${calculation.price.toLocaleString()} USD (Negotiable)
 Recommended Stack: ${calculation.recommendedStack}
 Client Notes: ${clientNotes || "None"}`,
           source: "Interactive Project Estimator",
@@ -429,10 +428,10 @@ Client Notes: ${clientNotes || "None"}`,
                   Negotiable
                 </span>
               </div>
-              <div className="font-display text-xl font-bold text-emerald-400 mt-2">
-                ${calculation.minPrice.toLocaleString()}{" "}
-                <span className="text-xs font-normal text-[#8A8175]">
-                  – ${calculation.maxPrice.toLocaleString()}
+              <div className="font-display text-2xl sm:text-3xl font-bold text-emerald-400 mt-2 flex items-baseline gap-1.5">
+                <span>${calculation.price.toLocaleString()}</span>
+                <span className="text-xs font-normal text-[#8A8175] font-mono">
+                  USD
                 </span>
               </div>
               <div className="text-[10px] text-[#A29A8E] font-mono mt-1">
