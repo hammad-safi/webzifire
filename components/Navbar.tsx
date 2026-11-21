@@ -43,7 +43,6 @@ export default function Navbar() {
     { label: "About", href: "/about" },
     { label: "Services", href: "/services" },
     { label: "Work", href: "/work" },
-    { label: "Estimator", href: "/estimate" },
     { label: "Journal", href: "/blog" },
     { label: "Contact", href: "/contact" },
   ];

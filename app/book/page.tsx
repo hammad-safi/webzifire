@@ -2,7 +2,6 @@ import React from "react";
 import Footer from "@/components/Footer";
 import WebziFireBot from "@/components/WebziFireBot";
 import ContactForm from "@/components/ContactForm";
-import ProjectEstimator from "@/components/ProjectEstimator";
 import TrackRecord from "@/components/TrackRecord";
 import CtaBox from "@/components/CtaBox";
 import PageHero from "@/components/PageHero";
@@ -55,9 +54,6 @@ export default function BookPage({
         </PageHero>
 
         <div id="scoping-app" className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col gap-16 pt-12">
-          {/* Interactive Project Cost & Scope Estimator */}
-          <ProjectEstimator />
-
           {/* Stepper Progress & Scoping App Split Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             {/* Left Column: Progress Stepper */}

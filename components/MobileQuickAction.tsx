@@ -35,12 +35,12 @@ export default function MobileQuickAction() {
         <span>WhatsApp</span>
       </a>
 
-      {/* Instant Estimate / Book Call */}
+      {/* Start Project / Book Call */}
       <Link
         href="/book"
         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-full bg-[#D6334A] hover:bg-[#b02237] text-white font-mono text-[11px] font-semibold tracking-wide shadow-[0_2px_12px_rgba(214,51,74,0.4)] transition-all active:scale-95"
       >
-        <span>Get Estimate</span>
+        <span>Start Project</span>
         <ArrowRight className="w-3 h-3" />
       </Link>
 

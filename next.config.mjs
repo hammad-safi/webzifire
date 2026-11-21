@@ -26,8 +26,13 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: "/estimate",
+        destination: "/book",
+        permanent: true,
+      },
+      {
         source: "/calculator",
-        destination: "/estimate",
+        destination: "/book",
         permanent: true,
       },
     ];
