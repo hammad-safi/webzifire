@@ -75,18 +75,18 @@ const SERVICE_PILLARS = [
 ];
 
 const PRESET_PHOTOS = [
-  { label: "📱 Mobile Architecture", url: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=90&w=1920&auto=format&fit=crop" },
-  { label: "💳 Retail POS & Terminal", url: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=90&w=1920&auto=format&fit=crop" },
-  { label: "📊 Custom CRM & Sales", url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=90&w=1920&auto=format&fit=crop" },
-  { label: "🏭 ERP & Operations", url: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=90&w=1920&auto=format&fit=crop" },
-  { label: "☁️ Multi-Tenant SaaS", url: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=90&w=1920&auto=format&fit=crop" },
-  { label: "🌐 Web & Composable", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=90&w=1920&auto=format&fit=crop" },
-  { label: "🤖 AI & Automation", url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=90&w=1920&auto=format&fit=crop" },
-  { label: "🔒 Cybersecurity SOC", url: "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=90&w=1920&auto=format&fit=crop" },
-  { label: "⚡ Cloud & DevOps", url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=1920&auto=format&fit=crop" },
-  { label: "🔌 Microservices & API", url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=90&w=1920&auto=format&fit=crop" },
-  { label: "🛍️ E-Commerce Commerce", url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=90&w=1920&auto=format&fit=crop" },
-  { label: "🏥 Healthcare & EHR", url: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=90&w=1920&auto=format&fit=crop" },
+  { label: "🌐 Web & Web Apps", url: "/services/website-web-application-development.jpg" },
+  { label: "📱 Mobile Apps", url: "/services/mobile-application-development.jpg" },
+  { label: "🏭 ERP & Operations", url: "/services/erp-enterprise-software.jpg" },
+  { label: "💳 Smart Retail POS", url: "/services/pos-retail-management-systems.jpg" },
+  { label: "☁️ SaaS Engineering", url: "/services/saas-product-development.jpg" },
+  { label: "📊 CRM & Sales", url: "/services/crm-business-applications.jpg" },
+  { label: "🛍️ E-Commerce Stores", url: "/services/ecommerce-development.jpg" },
+  { label: "🔌 Backend & APIs", url: "/services/backend-api-development.jpg" },
+  { label: "💻 Desktop Apps", url: "/services/desktop-application-development.jpg" },
+  { label: "🤖 AI-Powered Apps", url: "/services/ai-powered-application-development.jpg" },
+  { label: "🎨 UI/UX Design", url: "/services/ui-ux-design.jpg" },
+  { label: "⚡ Maintenance & Support", url: "/services/software-maintenance-optimization.jpg" },
 ];
 
 interface DashboardData {
