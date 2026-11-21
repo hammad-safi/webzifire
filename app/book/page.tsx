@@ -83,6 +83,19 @@ export default function BookPage({
                 ))}
               </ol>
 
+              <div className="p-4 rounded-xl bg-[#1B0E10] border border-[#2C181B] flex flex-col gap-2">
+                <div className="flex items-center gap-2 font-mono text-xs text-emerald-400 font-semibold uppercase tracking-wider">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Enterprise Guarantee</span>
+                </div>
+                <ul className="space-y-1.5 font-mono text-[11px] text-[#C4B5A5]">
+                  <li>✓ 100% IP &amp; Code Ownership</li>
+                  <li>✓ Mutual NDA Guaranteed</li>
+                  <li>✓ Zero Junior Developer Handoffs</li>
+                  <li>✓ Fixed-Bid Milestone Delivery</li>
+                </ul>
+              </div>
+
               <div className="pt-6 border-t border-[#2C181B] flex flex-col gap-2">
                 <span className="font-mono text-xs text-[#8A8175]">Prefer direct email?</span>
                 <a

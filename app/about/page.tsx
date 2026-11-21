@@ -55,8 +55,13 @@ export default function AboutPage() {
     },
     {
       key: "05",
+      label: "Security & Compliance",
+      value: "SOC2-aligned architecture, GDPR/HIPAA-ready practices, and mutual NDA protection",
+    },
+    {
+      key: "06",
       label: "Post-Launch Warranty",
-      value: "30-day post-launch warranty with dedicated technical support",
+      value: "30-day post-launch warranty with dedicated technical support and monitoring",
     },
   ];
 

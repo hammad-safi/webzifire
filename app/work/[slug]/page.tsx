@@ -11,6 +11,10 @@ import {
   Layers,
   Calendar,
   Sparkles,
+  Cpu,
+  AlertTriangle,
+  FileCheck,
+  ShieldCheck,
 } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -46,8 +50,47 @@ export default function CaseStudyDetailPage({
     (p) => p.category === project.category && p.id !== project.id
   );
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: project.title,
+    description: project.description,
+    image: `https://webzifire.com${project.image}`,
+    author: {
+      "@type": "Organization",
+      name: "WebziFire AI",
+      url: "https://webzifire.com",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "WebziFire AI",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://webzifire.com/logo.png",
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://webzifire.com/work/${project.id}`,
+    },
+    about: {
+      "@type": "SoftwareApplication",
+      name: project.title,
+      applicationCategory: project.category,
+      operatingSystem: "Web, Cloud, iOS, Android, Desktop",
+    },
+    keywords: project.techStack.join(", "),
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[#0B0607] text-[#F5EFE6]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
+      />
+
       <main className="w-full pt-28 pb-20">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 flex flex-col gap-12">
           {/* Back button */}
@@ -111,7 +154,7 @@ export default function CaseStudyDetailPage({
             />
           </div>
 
-          {/* Optional Metrics Trio Banner */}
+          {/* Quantifiable Metrics Trio Banner */}
           {project.metrics && project.metrics.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-8 rounded-3xl bg-[#140A0C] border border-[#2C181B] shadow-elevated-card">
               {project.metrics.map((m, idx) => (
@@ -142,6 +185,56 @@ export default function CaseStudyDetailPage({
                 </p>
               </div>
 
+              {/* The Engineering Challenge Callout */}
+              {project.challenge && (
+                <div className="p-7 rounded-2xl bg-[#1B0E10] border-l-4 border-[#D6334A] border-y border-r border-y-[#2C181B] border-r-[#2C181B] space-y-3">
+                  <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#D6334A] font-semibold">
+                    <AlertTriangle className="w-4 h-4 text-[#D6334A]" />
+                    <span>The Engineering Challenge</span>
+                  </div>
+                  <p className="font-sans text-base sm:text-lg text-[#F5EFE6] leading-relaxed">
+                    {project.challenge}
+                  </p>
+                </div>
+              )}
+
+              {/* Multi-Layer System Architecture Breakdown */}
+              {project.architecture && (
+                <div className="p-7 rounded-2xl bg-[#140A0C] border border-[#2C181B] space-y-6">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#D6334A] font-semibold">
+                      <Cpu className="w-4 h-4 text-[#D6334A]" />
+                      <span>System Architecture &amp; Engineering Layers</span>
+                    </div>
+                    <p className="font-sans text-sm text-[#8A8175] leading-relaxed">
+                      {project.architecture.overview}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {project.architecture.layers.map((layer, idx) => (
+                      <div
+                        key={idx}
+                        className="p-5 rounded-xl bg-[#0B0607] border border-[#2C181B] space-y-2 hover:border-[#D6334A]/40 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs uppercase tracking-wider text-[#D6334A] font-bold">
+                            {layer.layer}
+                          </span>
+                          <span className="font-mono text-[10px] text-[#8A8175]">Layer 0{idx + 1}</span>
+                        </div>
+                        <div className="font-mono text-xs text-[#F5EFE6] font-medium">
+                          {layer.technologies}
+                        </div>
+                        <p className="font-sans text-xs text-[#C4B5A5]/80 leading-relaxed">
+                          {layer.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Key Features & Modules Grid */}
               <div className="p-7 rounded-2xl bg-[#140A0C] border border-[#2C181B]">
                 <h2 className="font-display font-light text-2xl text-[#F5EFE6] mb-5 flex items-center gap-2.5">
@@ -160,6 +253,27 @@ export default function CaseStudyDetailPage({
                   ))}
                 </div>
               </div>
+
+              {/* Key Deliverables Catalog */}
+              {project.deliverables && project.deliverables.length > 0 && (
+                <div className="p-7 rounded-2xl bg-[#140A0C] border border-[#2C181B] space-y-5">
+                  <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[#D6334A] font-semibold">
+                    <FileCheck className="w-4 h-4 text-[#D6334A]" />
+                    <span>Verified Project Deliverables</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {project.deliverables.map((deliv, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-xl bg-[#1B0E10] border border-[#2C181B] flex items-start gap-3"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="font-sans text-sm text-[#F5EFE6] leading-snug">{deliv}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Related Service Practice Box */}
               <div className="p-6 rounded-2xl bg-[#140A0C] border border-[#2C181B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -226,6 +340,20 @@ export default function CaseStudyDetailPage({
                   <span className="text-[#8A8175]">
                     Architecture: <strong className="text-emerald-400">Production Ready</strong>
                   </span>
+                </div>
+
+                {/* Enterprise Standards Guarantee Box */}
+                <div className="p-4 rounded-xl bg-[#1B0E10] border border-[#2C181B] flex flex-col gap-2 mt-1">
+                  <div className="flex items-center gap-2 font-mono text-[11px] text-emerald-400 font-semibold uppercase tracking-wider">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Enterprise Guarantee</span>
+                  </div>
+                  <ul className="space-y-1.5 font-mono text-[10px] text-[#8A8175]">
+                    <li>✓ 100% IP &amp; Code Ownership Handover</li>
+                    <li>✓ Pre-Signed Mutual NDA on File</li>
+                    <li>✓ Zero Junior Dev Handoffs</li>
+                    <li>✓ Fixed-Bid Milestone Delivery</li>
+                  </ul>
                 </div>
 
                 <div className="flex flex-col gap-2.5 mt-3">
