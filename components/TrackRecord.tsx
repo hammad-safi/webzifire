@@ -140,6 +140,42 @@ export default function TrackRecord() {
             </div>
           </motion.div>
         </div>
+
+        {/* Enterprise Compliance, Standards & Security Band */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.35 }}
+          className="p-5 sm:p-6 rounded-2xl bg-[#140A0C] border border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        >
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_#34d399]" />
+            <div className="flex flex-col">
+              <span className="font-mono text-xs uppercase tracking-wider text-[#F5EFE6] font-semibold">
+                Enterprise Standards &amp; Delivery Guarantees
+              </span>
+              <span className="font-sans text-xs text-[#8A8175]">
+                Zero junior handoffs · Transparent sprint tracking · Complete IP ownership
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-[#C4B5A5]">
+            <span className="px-3 py-1 rounded-full bg-[#1B0E11] border border-[#2C181B]">
+              ✦ SOC2 Aligned
+            </span>
+            <span className="px-3 py-1 rounded-full bg-[#1B0E11] border border-[#2C181B]">
+              ✦ GDPR &amp; HIPAA Ready
+            </span>
+            <span className="px-3 py-1 rounded-full bg-[#1B0E11] border border-[#2C181B]">
+              ✦ Mutual NDA Guaranteed
+            </span>
+            <span className="px-3 py-1 rounded-full bg-[#1B0E11] border border-[#2C181B]">
+              ✦ 100% IP Handover
+            </span>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
