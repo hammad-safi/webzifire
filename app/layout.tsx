@@ -23,8 +23,12 @@ export const metadata: Metadata = {
     "Digital Practice",
   ],
   icons: {
-    icon: "/webzifire-icon.png",
-    apple: "/webzifire-icon.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/webzifire-icon.png", type: "image/png" },
+    ],
+    apple: [{ url: "/webzifire-icon.png" }],
+    shortcut: ["/favicon.ico"],
   },
   openGraph: {
     title: "WebziFire | Igniting Ideas Through Technology",
@@ -96,7 +100,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark scroll-smooth">
       <head>
-        <link rel="icon" href="/webzifire-icon.png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/webzifire-icon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/webzifire-icon.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
