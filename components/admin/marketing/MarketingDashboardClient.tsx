@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Sparkles,
   RefreshCw,
@@ -14,11 +14,16 @@ import {
   Send,
   Loader2,
   TrendingUp,
-  CheckCircle2
+  CheckCircle2,
+  Bell,
+  Clock,
+  Layers,
+  Flame
 } from "lucide-react";
 import { AdminNavHeader } from "../AdminNavHeader";
 import { CompanyDrawer } from "./CompanyDrawer";
 import { PipelineKanban } from "./PipelineKanban";
+import { ProspectSequenceCard, ProspectSequenceGroup } from "./ProspectSequenceCard";
 import {
   CompanyRecord,
   ContactRecord,
@@ -46,6 +51,7 @@ export function MarketingDashboardClient() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
   const [outreachStatusFilter, setOutreachStatusFilter] = useState("all");
+  const [sequenceFilter, setSequenceFilter] = useState<"all" | "followups_due" | "pending_review" | "active" | "replied">("all");
 
   // Selection & Drawer states
   const [selectedCompany, setSelectedCompany] = useState<CompanyRecord | null>(null);
@@ -241,6 +247,112 @@ export function MarketingDashboardClient() {
     }
   };
 
+  // Mark Outreach Replied
+  const handleMarkReplied = async (outreachId: string) => {
+    try {
+      const res = await fetch("/api/admin/marketing/outreach", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: outreachId,
+          action: "mark_replied",
+          response_sentiment: "positive"
+        })
+      });
+      if (res.ok) {
+        setBanner({
+          type: "ok",
+          text: "Prospect marked as Replied! Pipeline stage advanced to In Conversation."
+        });
+        await loadData();
+        if (selectedCompany) handleOpenCompanyDrawer(selectedCompany);
+      }
+    } catch (err) {
+      console.error("Error marking outreach replied:", err);
+    }
+  };
+
+  // Sequence Box Grouping (Idea 1 & 2: Group by prospect and calculate 4-day follow-up alarm)
+  const sequenceGroups = useMemo(() => {
+    const groupsMap = new Map<string, ProspectSequenceGroup>();
+
+    outreachList.forEach((msg) => {
+      const contact = msg.b2b_contacts;
+      const company = msg.b2b_companies;
+      const key = msg.contact_id || msg.company_id;
+
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          key,
+          contactName: contact?.full_name || "Decision-Maker",
+          contactTitle: contact?.job_title,
+          contactEmail: contact?.email,
+          linkedinUrl: contact?.linkedin_url,
+          companyName: company?.name || "Target Company",
+          companyDomain: company?.domain || "",
+          leadScore: company?.lead_score,
+          companyId: msg.company_id,
+          contactId: msg.contact_id || undefined,
+          hasFollowUpDue: false,
+          sequenceStatus: "ready_initial"
+        });
+      }
+
+      const grp = groupsMap.get(key)!;
+      if (msg.channel === "linkedin") {
+        grp.linkedinMessage = msg;
+      } else if (msg.message_type === "cold_email") {
+        grp.initialEmail = msg;
+      } else if (msg.message_type === "follow_up") {
+        grp.followUpEmail = msg;
+      }
+    });
+
+    const list = Array.from(groupsMap.values());
+
+    // Calculate follow-up alarms & sequence statuses
+    list.forEach((grp) => {
+      if (grp.initialEmail?.status === "replied" || grp.followUpEmail?.status === "replied") {
+        grp.sequenceStatus = "replied";
+      } else if (grp.initialEmail?.status === "sent" && grp.initialEmail.sent_at) {
+        const sentTime = new Date(grp.initialEmail.sent_at).getTime();
+        const daysElapsed = (Date.now() - sentTime) / (1000 * 60 * 60 * 24);
+
+        if (daysElapsed >= 4 && grp.followUpEmail?.status !== "sent") {
+          grp.hasFollowUpDue = true;
+          grp.sequenceStatus = "followup_due";
+        } else if (daysElapsed < 4 && grp.followUpEmail?.status !== "sent") {
+          grp.daysUntilFollowUp = Math.ceil(4 - daysElapsed);
+          grp.sequenceStatus = "waiting_followup";
+        } else if (grp.followUpEmail?.status === "sent") {
+          grp.sequenceStatus = "completed";
+        }
+      } else if (grp.initialEmail?.status === "draft") {
+        grp.sequenceStatus = "ready_initial";
+      }
+    });
+
+    return list;
+  }, [outreachList]);
+
+  // Count follow-ups due
+  const followUpsDueCount = useMemo(() => {
+    return sequenceGroups.filter((s) => s.hasFollowUpDue).length;
+  }, [sequenceGroups]);
+
+  // Filtered sequence groups based on user filter
+  const filteredSequences = useMemo(() => {
+    return sequenceGroups.filter((grp) => {
+      if (sequenceFilter === "followups_due") return grp.hasFollowUpDue;
+      if (sequenceFilter === "pending_review")
+        return grp.initialEmail?.status === "draft" || grp.linkedinMessage?.status === "draft";
+      if (sequenceFilter === "active")
+        return grp.sequenceStatus === "waiting_followup" || grp.sequenceStatus === "followup_due";
+      if (sequenceFilter === "replied") return grp.sequenceStatus === "replied";
+      return true;
+    });
+  }, [sequenceGroups, sequenceFilter]);
+
   // Update Company Status / Stage
   const handleUpdateCompanyStatus = async (companyId: string, newStatus: string) => {
     try {
@@ -367,7 +479,13 @@ export function MarketingDashboardClient() {
             { id: "contacts", label: `👤 Decision-Makers (${contacts.length})` },
             { id: "opportunities", label: `💼 Opportunities (${opportunities.length})` },
             { id: "kanban", label: "📋 Pipeline Kanban" },
-            { id: "outreach", label: `✉️ Outreach Desk (${telemetry?.summary.pending_outreach_approval || 0} Pending)` },
+            {
+              id: "outreach",
+              label:
+                followUpsDueCount > 0
+                  ? `🔔 Outreach Desk (${followUpsDueCount} Due Now)`
+                  : `✉️ Outreach Desk (${sequenceGroups.length} Sequences)`
+            },
             { id: "settings", label: "⚙️ Campaign Config" }
           ].map((tab) => (
             <button
@@ -846,170 +964,109 @@ export function MarketingDashboardClient() {
         {/* TAB 6: OUTREACH DESK */}
         {activeTab === "outreach" && (
           <div className="space-y-4">
-            {/* Outreach Desk Header & Filter */}
-            <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Outreach Desk Header & Filter Bar */}
+            <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
-                <h3 className="text-sm font-mono font-bold text-white uppercase">
-                  Human-in-the-Loop Outreach Approval Desk
+                <h3 className="text-sm font-mono font-bold text-white uppercase flex items-center gap-2">
+                  <span>Prospect Outreach Sequences &amp; 4-Day Alarms</span>
+                  {followUpsDueCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse flex items-center gap-1">
+                      <Bell className="w-3 h-3" />
+                      {followUpsDueCount} Due Now
+                    </span>
+                  )}
                 </h3>
-                <p className="text-xs text-[#8A8175] font-mono">
-                  Every message is generated using real company research. AI never sends without your explicit review and 1-click approval.
+                <p className="text-xs text-[#8A8175] font-mono mt-0.5">
+                  Organized by prospect: Step 1 (Initial Email + LinkedIn) and Step 2 (4-Day Follow-Up). AI never sends without your 1-click approval.
                 </p>
               </div>
 
-              <select
-                value={outreachStatusFilter}
-                onChange={(e) => setOutreachStatusFilter(e.target.value)}
-                className="bg-[#1A0C10] border border-[#2C181B] rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#D6334A]"
-              >
-                <option value="all">All Statuses</option>
-                <option value="draft">Pending Approval (Drafts)</option>
-                <option value="approved">Approved</option>
-                <option value="sent">Sent</option>
-                <option value="replied">Replied</option>
-              </select>
+              {/* Sequence Filter Tabs */}
+              <div className="flex flex-wrap items-center gap-1.5 bg-[#1A0C10] p-1 rounded-xl border border-[#2C181B]">
+                <button
+                  type="button"
+                  onClick={() => setSequenceFilter("all")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                    sequenceFilter === "all"
+                      ? "bg-[#D6334A] text-white font-bold"
+                      : "text-[#8A8175] hover:text-white"
+                  }`}
+                >
+                  All ({sequenceGroups.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSequenceFilter("followups_due")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer flex items-center gap-1 ${
+                    sequenceFilter === "followups_due"
+                      ? "bg-amber-500 text-black font-bold"
+                      : "text-amber-400/80 hover:text-amber-300"
+                  }`}
+                >
+                  <Bell className="w-3 h-3" />
+                  Follow-Ups Due ({followUpsDueCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSequenceFilter("pending_review")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                    sequenceFilter === "pending_review"
+                      ? "bg-[#D6334A] text-white font-bold"
+                      : "text-[#8A8175] hover:text-white"
+                  }`}
+                >
+                  Pending Review
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSequenceFilter("active")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                    sequenceFilter === "active"
+                      ? "bg-[#D6334A] text-white font-bold"
+                      : "text-[#8A8175] hover:text-white"
+                  }`}
+                >
+                  Waiting 4 Days
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSequenceFilter("replied")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                    sequenceFilter === "replied"
+                      ? "bg-emerald-500 text-black font-bold"
+                      : "text-emerald-400/80 hover:text-emerald-300"
+                  }`}
+                >
+                  Replied
+                </button>
+              </div>
             </div>
 
-            {/* Outreach Messages List */}
+            {/* Grouped Prospect Sequences List */}
             <div className="space-y-4">
-              {filteredOutreach.length === 0 ? (
-                <div className="p-8 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B]">
-                  No outreach messages found under this filter.
+              {filteredSequences.length === 0 ? (
+                <div className="p-10 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B] space-y-2">
+                  <p>No prospect sequences match this filter.</p>
+                  <p className="text-[11px] text-[#635B50]">
+                    {sequenceFilter === "followups_due"
+                      ? "Great work! There are no 4-day follow-ups due right now."
+                      : "Run an AI Prospecting Sprint to discover high-fit prospects and generate multi-step sequences."}
+                  </p>
                 </div>
               ) : (
-                filteredOutreach.map((msg: OutreachRecord) => (
-                  <div
-                    key={msg.id}
-                    className="p-5 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded text-[10px] font-mono uppercase bg-[#1F0C12] text-[#D6334A] border border-[#D6334A]/40 font-bold">
-                          {msg.channel === "linkedin" ? "LINKEDIN" : "EMAIL"}
-                        </span>
-
-                        {/* Sequence step indicators */}
-                        {msg.message_type === "cold_email" && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                            ⚡ Step 1: Initial Email
-                          </span>
-                        )}
-                        {msg.message_type === "follow_up" && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
-                            ⏳ Step 2: 4-Day Follow-Up (If no reply)
-                          </span>
-                        )}
-                        {msg.message_type === "connection_request" && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold">
-                            💼 Step 1: LinkedIn Connect
-                          </span>
-                        )}
-
-                        <span className="text-xs font-mono text-[#8A8175]">
-                          To: {msg.b2b_contacts?.full_name || "Decision-Maker"} @ {msg.b2b_companies?.name || "Company"}
-                        </span>
-                      </div>
-
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
-                          msg.status === "sent"
-                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                            : msg.status === "approved"
-                            ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
-                            : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                        }`}
-                      >
-                        {msg.status}
-                      </span>
-                    </div>
-
-                    {msg.subject && (
-                      <div className="text-xs font-mono text-[#FAF7F2] bg-[#180A0E] p-2.5 rounded-xl border border-[#2C181B]">
-                        <strong>Subject:</strong> {msg.subject}
-                      </div>
-                    )}
-
-                    <div className="p-4 rounded-xl bg-[#180A0E] border border-[#2C181B] text-xs text-[#FAF7F2] whitespace-pre-wrap leading-relaxed font-sans">
-                      {msg.message_content}
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#2C181B]/50">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => copyText(msg.message_content, msg.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-[#D6334A]/50 text-xs font-mono text-[#B8AEA3] hover:text-white transition-colors cursor-pointer"
-                        >
-                          {copiedId === msg.id ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Copied!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5" />
-                              <span>Copy Text</span>
-                            </>
-                          )}
-                        </button>
-
-                        {/* LinkedIn Option A: Launch on LinkedIn */}
-                        {msg.channel === "linkedin" && (
-                          <button
-                            type="button"
-                            onClick={() => handleLaunchLinkedIn(msg)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-sky-600/20 cursor-pointer"
-                            title="Copies message and opens LinkedIn profile in a new tab"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>Launch on LinkedIn</span>
-                          </button>
-                        )}
-
-                        {/* Email Option A: Send via SMTP */}
-                        {msg.channel === "email" && msg.status !== "sent" && (
-                          <button
-                            type="button"
-                            onClick={() => handleDirectSendEmail(msg.id)}
-                            disabled={sendingEmailId === msg.id}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
-                            title="Delivers this cold email directly through your configured business SMTP"
-                          >
-                            {sendingEmailId === msg.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                            <span>{sendingEmailId === msg.id ? "Sending SMTP..." : "Send via SMTP (1-Click)"}</span>
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {msg.status === "draft" && (
-                          <button
-                            type="button"
-                            onClick={() => handleApproveOutreach(msg.id)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D6334A] hover:bg-[#e0324b] text-white text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-[#D6334A]/20"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Approve</span>
-                          </button>
-                        )}
-
-                        {msg.status !== "sent" && (
-                          <button
-                            type="button"
-                            onClick={() => handleMarkSentOutreach(msg.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] hover:bg-[#2C181B] text-[#B8AEA3] hover:text-white border border-[#2C181B] text-xs font-mono transition-all cursor-pointer"
-                          >
-                            <Send className="w-3 h-3" />
-                            <span>Mark as Sent</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                filteredSequences.map((seq) => (
+                  <ProspectSequenceCard
+                    key={seq.key}
+                    sequence={seq}
+                    copiedId={copiedId}
+                    sendingEmailId={sendingEmailId}
+                    onCopyText={copyText}
+                    onLaunchLinkedIn={handleLaunchLinkedIn}
+                    onDirectSendEmail={handleDirectSendEmail}
+                    onApproveOutreach={handleApproveOutreach}
+                    onMarkSentOutreach={handleMarkSentOutreach}
+                    onMarkReplied={handleMarkReplied}
+                  />
                 ))
               )}
             </div>
