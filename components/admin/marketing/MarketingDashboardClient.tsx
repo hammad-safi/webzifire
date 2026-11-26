@@ -136,6 +136,7 @@ export function MarketingDashboardClient() {
   const [runningSprint, setRunningSprint] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [sendingDigest, setSendingDigest] = useState(false);
+  const [syncingMeetingLink, setSyncingMeetingLink] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -149,6 +150,73 @@ export function MarketingDashboardClient() {
     include_meeting_link: true,
     portfolio_matching_enabled: true
   });
+
+  // Load campaignConfig from localStorage on client mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("webzifire_campaign_config");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setCampaignConfig((prev) => ({ ...prev, ...parsed }));
+        } catch (e) {
+          console.error("Failed to parse campaign config from localStorage:", e);
+        }
+      }
+    }
+  }, []);
+
+  const handleSaveCampaignConfig = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("webzifire_campaign_config", JSON.stringify(campaignConfig));
+    }
+    setBanner({ type: "ok", text: "Campaign settings saved successfully to browser storage!" });
+  };
+
+  const handleApplyMeetingLinkToDrafts = async () => {
+    const targetUrl = (campaignConfig.meeting_booking_url || "https://cal.com/webzifire").trim();
+    if (!targetUrl) return;
+    setSyncingMeetingLink(true);
+    setBanner(null);
+    try {
+      const emailDrafts = outreachList.filter(
+        (o) => o.channel === "email" && (o.status === "draft" || o.status === "approved")
+      );
+      let updatedCount = 0;
+
+      for (const draft of emailDrafts) {
+        const content = draft.message_content || "";
+        let newContent = content;
+
+        if (newContent.includes("cal.com/webzen")) {
+          newContent = newContent.replace(/https?:\/\/cal\.com\/webzen/g, targetUrl);
+        } else if (!newContent.includes(targetUrl)) {
+          newContent = `${newContent.trim()}\n\nIf you're open to a brief chat next week, feel free to pick a time here: ${targetUrl}`;
+        }
+
+        if (newContent !== content) {
+          const res = await fetch("/api/admin/marketing/outreach", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: draft.id, message_content: newContent })
+          });
+          if (res.ok) {
+            updatedCount++;
+          }
+        }
+      }
+
+      await loadData();
+      setBanner({
+        type: "ok",
+        text: `Successfully synced ${targetUrl} across ${updatedCount} email draft(s)!`
+      });
+    } catch (err: any) {
+      setBanner({ type: "err", text: `Failed to update drafts: ${err.message}` });
+    } finally {
+      setSyncingMeetingLink(false);
+    }
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -1394,6 +1462,28 @@ export function MarketingDashboardClient() {
                     Automatically weave meeting link into Cold Email &amp; Follow-Up calls-to-action
                   </label>
                 </div>
+
+                {/* Instant 1-Click Sync for all existing drafts */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleApplyMeetingLinkToDrafts}
+                    disabled={syncingMeetingLink}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 font-mono text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {syncingMeetingLink ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Syncing drafts with {campaignConfig.meeting_booking_url}...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Apply {campaignConfig.meeting_booking_url.replace("https://", "")} to All Existing Drafts</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* IDEA 3: SMART PORTFOLIO PROOF ENGINE SHOWCASE */}
@@ -1444,15 +1534,22 @@ export function MarketingDashboardClient() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#2C181B]">
+              <div className="pt-4 border-t border-[#2C181B] flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setBanner({ type: "ok", text: "Campaign configuration updated successfully." });
-                  }}
+                  onClick={handleSaveCampaignConfig}
                   className="px-5 py-2.5 rounded-xl bg-[#D6334A] hover:bg-[#e0324b] text-white font-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#D6334A]/30"
                 >
                   Save Campaign Configuration
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApplyMeetingLinkToDrafts}
+                  disabled={syncingMeetingLink}
+                  className="px-4 py-2.5 rounded-xl bg-[#1C0D11] hover:bg-[#2C181B] border border-amber-500/30 text-amber-300 font-mono text-xs font-bold transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
+                >
+                  {syncingMeetingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                  <span>Sync {campaignConfig.meeting_booking_url.replace("https://", "")} into All Drafts</span>
                 </button>
               </div>
             </div>
