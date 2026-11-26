@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   X,
   ExternalLink,
@@ -22,6 +22,7 @@ import {
   Layers
 } from "lucide-react";
 import { CompanyRecord, ContactRecord, OpportunityRecord, OutreachRecord } from "@/lib/marketing/types";
+import { ProspectSequenceCard, ProspectSequenceGroup } from "./ProspectSequenceCard";
 
 interface CompanyDrawerProps {
   company: CompanyRecord | null;
@@ -111,6 +112,63 @@ export function CompanyDrawer({
   const needs: string[] = company.potential_needs || [];
   const rationale = company.score_rationale as any;
   const currentStage: string = company.pipeline_stage || (company as any).lead_status || "qualified";
+
+  // Group drawer outreach messages into clean sequence boxes
+  const sequenceGroups = useMemo(() => {
+    const groupsMap = new Map<string, ProspectSequenceGroup>();
+
+    outreach.forEach((msg) => {
+      const contact = contacts.find((c) => c.id === msg.contact_id);
+      const key = msg.contact_id || company.id;
+
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          key,
+          contactName: contact?.full_name || "Decision-Maker",
+          contactTitle: contact?.job_title,
+          contactEmail: contact?.email || company.official_email || undefined,
+          linkedinUrl: contact?.linkedin_url || company.linkedin_url || undefined,
+          companyName: company.name,
+          companyDomain: company.domain,
+          leadScore: company.lead_score,
+          companyId: company.id,
+          contactId: msg.contact_id || undefined,
+          hasFollowUpDue: false,
+          sequenceStatus: "ready_initial"
+        });
+      }
+
+      const grp = groupsMap.get(key)!;
+      if (msg.channel === "linkedin") {
+        grp.linkedinMessage = msg;
+      } else if (msg.message_type === "cold_email") {
+        grp.initialEmail = msg;
+      } else if (msg.message_type === "follow_up") {
+        grp.followUpEmail = msg;
+      }
+    });
+
+    const list = Array.from(groupsMap.values());
+    list.forEach((grp) => {
+      if (grp.initialEmail?.status === "replied" || grp.followUpEmail?.status === "replied") {
+        grp.sequenceStatus = "replied";
+      } else if (grp.initialEmail?.status === "sent" && grp.initialEmail.sent_at) {
+        const sentTime = new Date(grp.initialEmail.sent_at).getTime();
+        const daysElapsed = (Date.now() - sentTime) / (1000 * 60 * 60 * 24);
+        if (daysElapsed >= 4 && grp.followUpEmail?.status !== "sent") {
+          grp.hasFollowUpDue = true;
+          grp.sequenceStatus = "followup_due";
+        } else if (daysElapsed < 4 && grp.followUpEmail?.status !== "sent") {
+          grp.daysUntilFollowUp = Math.ceil(4 - daysElapsed);
+          grp.sequenceStatus = "waiting_followup";
+        } else if (grp.followUpEmail?.status === "sent") {
+          grp.sequenceStatus = "completed";
+        }
+      }
+    });
+
+    return list;
+  }, [outreach, contacts, company]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
@@ -460,140 +518,26 @@ export function CompanyDrawer({
 
           {activeTab === "outreach" && (
             <div className="space-y-4">
-              {outreach.length === 0 ? (
+              {sequenceGroups.length === 0 ? (
                 <div className="p-8 text-center text-xs font-mono text-[#8A8175]">
                   No outreach messages generated yet. Run a prospecting sprint to draft personalized pitches.
                 </div>
               ) : (
-                outreach.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className="p-5 rounded-2xl bg-[#160B0F] border border-[#2C181B] space-y-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-[#1C0D11] text-[#D6334A] border border-[#2C181B] font-bold">
-                          {msg.channel === "linkedin" ? "LINKEDIN" : "EMAIL"}
-                        </span>
-                        
-                        {msg.message_type === "cold_email" && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
-                            ⚡ Step 1: Initial Email
-                          </span>
-                        )}
-                        {msg.message_type === "follow_up" && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
-                            ⏳ Step 2: 4-Day Follow-Up (If no reply)
-                          </span>
-                        )}
-                        {msg.message_type === "connection_request" && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold">
-                            💼 Step 1: LinkedIn Connect
-                          </span>
-                        )}
-                      </div>
-
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
-                          msg.status === "sent"
-                            ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                            : msg.status === "approved"
-                            ? "bg-sky-500/20 text-sky-300 border border-sky-500/30"
-                            : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                        }`}
-                      >
-                        {msg.status}
-                      </span>
-                    </div>
-
-                    {msg.subject && (
-                      <div className="text-xs font-mono text-[#E0D8D0] bg-[#120709] p-2 rounded-lg border border-[#2C181B]">
-                        <strong>Subject:</strong> {msg.subject}
-                      </div>
-                    )}
-
-                    <div className="p-3 rounded-xl bg-[#120709] border border-[#2C181B] text-xs text-[#E0D8D0] whitespace-pre-wrap leading-relaxed font-sans">
-                      {msg.message_content}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#2C181B]/60">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => copyText(msg.message_content, msg.id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-[#D6334A]/50 text-xs font-mono text-[#B8AEA3] hover:text-white transition-colors cursor-pointer"
-                        >
-                          {copiedId === msg.id ? (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Copied!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5" />
-                              <span>Copy Text</span>
-                            </>
-                          )}
-                        </button>
-
-                        {/* LinkedIn Option A */}
-                        {msg.channel === "linkedin" && (
-                          <button
-                            type="button"
-                            onClick={() => handleLaunchLinkedIn(msg)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-sky-600/20 cursor-pointer"
-                            title="Copies text and opens LinkedIn profile"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            <span>Launch on LinkedIn</span>
-                          </button>
-                        )}
-
-                        {/* Email Option A */}
-                        {msg.channel === "email" && msg.status !== "sent" && (
-                          <button
-                            type="button"
-                            onClick={() => handleSendEmail(msg.id)}
-                            disabled={sendingEmailId === msg.id}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
-                            title="Sends this cold email directly via business SMTP"
-                          >
-                            {sendingEmailId === msg.id ? (
-                              <Clock className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Send className="w-3.5 h-3.5" />
-                            )}
-                            <span>{sendingEmailId === msg.id ? "Sending SMTP..." : "Send via SMTP (1-Click)"}</span>
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {msg.status === "draft" && (
-                          <button
-                            type="button"
-                            onClick={() => onApproveOutreach(msg.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D6334A]/20 hover:bg-[#D6334A] text-white border border-[#D6334A]/50 text-xs font-mono font-medium transition-all cursor-pointer"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Approve</span>
-                          </button>
-                        )}
-
-                        {msg.status !== "sent" && (
-                          <button
-                            type="button"
-                            onClick={() => onMarkSentOutreach(msg.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] hover:bg-[#2C181B] text-[#B8AEA3] hover:text-white border border-[#2C181B] text-xs font-mono transition-all cursor-pointer"
-                          >
-                            <Send className="w-3 h-3" />
-                            <span>Mark as Sent</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                sequenceGroups.map((seq) => (
+                  <ProspectSequenceCard
+                    key={seq.key}
+                    sequence={seq}
+                    copiedId={copiedId}
+                    sendingEmailId={sendingEmailId}
+                    onCopyText={copyText}
+                    onLaunchLinkedIn={handleLaunchLinkedIn}
+                    onDirectSendEmail={handleSendEmail}
+                    onApproveOutreach={onApproveOutreach}
+                    onMarkSentOutreach={onMarkSentOutreach}
+                    onMarkReplied={async (id) => {
+                      await onMarkSentOutreach(id);
+                    }}
+                  />
                 ))
               )}
             </div>
