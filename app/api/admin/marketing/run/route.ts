@@ -18,6 +18,14 @@ export async function POST(req: Request) {
 
     const sprintResult = await runProspectingSprint(campaignId, batchLimit);
 
+    if (!sprintResult.success) {
+      return NextResponse.json({
+        success: false,
+        error: sprintResult.errors.join("; ") || "Failed to run prospecting sprint",
+        result: sprintResult
+      }, { status: 400 });
+    }
+
     return NextResponse.json({
       success: true,
       result: sprintResult

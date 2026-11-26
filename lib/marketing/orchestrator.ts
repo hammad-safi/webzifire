@@ -68,11 +68,27 @@ export async function runProspectingSprint(
     }
   }
 
-  // Load existing domains to avoid re-discovering duplicates
+  // Check if b2b_companies table exists in Supabase
   const existingDomains = new Set<string>();
-  const { data: existingRows } = await supabase
+  const { data: existingRows, error: tableCheckErr } = await supabase
     .from("b2b_companies")
     .select("domain");
+
+  if (tableCheckErr && (tableCheckErr.message?.includes("b2b_companies") || tableCheckErr.message?.includes("schema cache") || tableCheckErr.message?.includes("PGRST205"))) {
+    return {
+      success: false,
+      campaign_id: campaignId,
+      companies_evaluated: 0,
+      companies_qualified: 0,
+      contacts_created: 0,
+      opportunities_created: 0,
+      outreach_drafts_created: 0,
+      errors: [
+        "Supabase tables for AI Marketing are not created yet. Please execute 'supabase/migrations/20261127_b2b_prospecting.sql' in your Supabase SQL Editor."
+      ],
+      processed_companies: []
+    };
+  }
 
   if (existingRows) {
     existingRows.forEach((r: { domain: string }) => {
