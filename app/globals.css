@@ -72,6 +72,36 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #E0324B;
   }
+
+  /* Dedicated no-scrollbar utility for horizontal swipe on mobile */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Custom isolated scrollable panels with crimson accent and scroll containment */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(214, 51, 74, 0.4) transparent;
+    overscroll-behavior: contain;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(214, 51, 74, 0.3);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #D6334A;
+  }
 }
 
 /* CodeFier-Style Sloping Italic Accent */

@@ -37,6 +37,73 @@ import {
   CampaignRecord
 } from "@/lib/marketing/types";
 
+interface InfiniteScrollSentinelProps {
+  hasMore: boolean;
+  current: number;
+  total: number;
+  onLoadMore: () => void;
+}
+
+function InfiniteScrollSentinel({
+  hasMore,
+  current,
+  total,
+  onLoadMore
+}: InfiniteScrollSentinelProps) {
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, onLoadMore]);
+
+  if (total <= 6) return null;
+
+  return (
+    <div
+      ref={sentinelRef}
+      className="py-6 flex flex-col items-center justify-center gap-1.5 text-xs font-mono text-[#8A8175]"
+    >
+      {hasMore ? (
+        <>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-[#D6334A] animate-spin" />
+            <span className="text-[#D6CEC5]">Loading more as you scroll...</span>
+          </div>
+          <button
+            type="button"
+            onClick={onLoadMore}
+            className="text-[11px] text-[#8A8175] hover:text-[#FAF7F2] underline cursor-pointer mt-0.5"
+          >
+            Or click to load next batch
+          </button>
+          <span className="text-[10px] text-[#635B50]">
+            Showing {current} of {total}
+          </span>
+        </>
+      ) : (
+        <span className="text-[11px] text-[#635B50] flex items-center gap-1">
+          <Check className="w-3.5 h-3.5 text-emerald-400" />
+          All {total} items loaded
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function MarketingDashboardClient() {
   const [activeTab, setActiveTab] = useState<
     "overview" | "companies" | "contacts" | "opportunities" | "kanban" | "outreach" | "settings"
@@ -455,6 +522,37 @@ export function MarketingDashboardClient() {
     return o.status === outreachStatusFilter;
   });
 
+  // Optimized Progressive Infinite Scroll Pagination (Batch Loading)
+  const [companiesLimit, setCompaniesLimit] = useState(15);
+  const [contactsLimit, setContactsLimit] = useState(15);
+  const [opportunitiesLimit, setOpportunitiesLimit] = useState(12);
+  const [sequencesLimit, setSequencesLimit] = useState(8);
+
+  // Auto reset limits on filter adjustments
+  useEffect(() => {
+    setCompaniesLimit(15);
+  }, [searchTerm, priorityFilter, countryFilter]);
+
+  useEffect(() => {
+    setSequencesLimit(8);
+  }, [sequenceFilter]);
+
+  const paginatedCompanies = useMemo(() => {
+    return filteredCompanies.slice(0, companiesLimit);
+  }, [filteredCompanies, companiesLimit]);
+
+  const paginatedContacts = useMemo(() => {
+    return contacts.slice(0, contactsLimit);
+  }, [contacts, contactsLimit]);
+
+  const paginatedOpportunities = useMemo(() => {
+    return opportunities.slice(0, opportunitiesLimit);
+  }, [opportunities, opportunitiesLimit]);
+
+  const paginatedSequences = useMemo(() => {
+    return filteredSequences.slice(0, sequencesLimit);
+  }, [filteredSequences, sequencesLimit]);
+
   return (
     <div className="min-h-screen bg-[#070405] text-[#FAF7F2] pt-24 pb-20 px-4 sm:px-8 lg:px-12 font-sans">
       <div className="max-w-[1440px] mx-auto space-y-6">
@@ -523,8 +621,8 @@ export function MarketingDashboardClient() {
           </div>
         )}
 
-        {/* Tab Controls */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#2C181B] pb-3 text-xs font-mono">
+        {/* Tab Controls (Mobile Horizontal Swipe + Desktop Wrap) */}
+        <div className="flex items-center gap-2 border-b border-[#2C181B] pb-3 text-xs font-mono overflow-x-auto no-scrollbar scroll-smooth flex-nowrap sm:flex-wrap">
           {[
             { id: "overview", label: "📈 Overview & Telemetry" },
             { id: "companies", label: `🏢 Companies (${companies.length})` },
@@ -544,7 +642,7 @@ export function MarketingDashboardClient() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === tab.id
                   ? "bg-[#1F0C12] text-white border border-[#D6334A]/50 font-bold"
                   : "bg-[#120709] text-[#8A8175] hover:text-[#FAF7F2] border border-[#2C181B]"
@@ -777,8 +875,8 @@ export function MarketingDashboardClient() {
             </div>
 
             {/* Companies Table */}
-            <div className="overflow-x-auto rounded-2xl border border-[#2C181B] bg-[#120709]">
-              <table className="w-full text-left text-xs font-mono">
+            <div className="overflow-x-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner">
+              <table className="w-full text-left text-xs font-mono min-w-[780px]">
                 <thead className="bg-[#1A0C10] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px]">
                   <tr>
                     <th className="p-4">Company &amp; Domain</th>
@@ -798,7 +896,7 @@ export function MarketingDashboardClient() {
                       </td>
                     </tr>
                   ) : (
-                    filteredCompanies.map((c: CompanyRecord) => {
+                    paginatedCompanies.map((c: CompanyRecord) => {
                       const techStack: string[] = c.tech_stack || (c as any).technologies || [];
                       const stage: string = c.pipeline_stage || (c as any).lead_status || "qualified";
 
@@ -886,14 +984,22 @@ export function MarketingDashboardClient() {
                 </tbody>
               </table>
             </div>
+
+            {/* Infinite Scroll Sentinel for Companies */}
+            <InfiniteScrollSentinel
+              hasMore={paginatedCompanies.length < filteredCompanies.length}
+              current={paginatedCompanies.length}
+              total={filteredCompanies.length}
+              onLoadMore={() => setCompaniesLimit((prev) => prev + 15)}
+            />
           </div>
         )}
 
         {/* TAB 3: DECISION-MAKERS */}
         {activeTab === "contacts" && (
           <div className="space-y-4">
-            <div className="overflow-x-auto rounded-2xl border border-[#2C181B] bg-[#120709]">
-              <table className="w-full text-left text-xs font-mono">
+            <div className="overflow-x-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner">
+              <table className="w-full text-left text-xs font-mono min-w-[760px]">
                 <thead className="bg-[#1A0C10] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px]">
                   <tr>
                     <th className="p-4">Contact Name &amp; Title</th>
@@ -912,7 +1018,7 @@ export function MarketingDashboardClient() {
                       </td>
                     </tr>
                   ) : (
-                    contacts.map((ct: ContactRecord) => (
+                    paginatedContacts.map((ct: ContactRecord) => (
                       <tr key={ct.id} className="hover:bg-[#180B0F] transition-colors">
                         <td className="p-4 font-bold text-white">
                           <div className="flex items-center gap-2">
@@ -975,6 +1081,14 @@ export function MarketingDashboardClient() {
                 </tbody>
               </table>
             </div>
+
+            {/* Infinite Scroll Sentinel for Contacts */}
+            <InfiniteScrollSentinel
+              hasMore={paginatedContacts.length < contacts.length}
+              current={paginatedContacts.length}
+              total={contacts.length}
+              onLoadMore={() => setContactsLimit((prev) => prev + 15)}
+            />
           </div>
         )}
 
@@ -987,7 +1101,7 @@ export function MarketingDashboardClient() {
                   No opportunities detected yet. Run an AI Prospecting Sprint to identify engineering jobs and client development contracts.
                 </div>
               ) : (
-                opportunities.map((opp: OpportunityRecord) => (
+                paginatedOpportunities.map((opp: OpportunityRecord) => (
                   <div
                     key={opp.id}
                     className="p-5 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-3 flex flex-col justify-between"
@@ -1034,6 +1148,14 @@ export function MarketingDashboardClient() {
                 ))
               )}
             </div>
+
+            {/* Infinite Scroll Sentinel for Opportunities */}
+            <InfiniteScrollSentinel
+              hasMore={paginatedOpportunities.length < opportunities.length}
+              current={paginatedOpportunities.length}
+              total={opportunities.length}
+              onLoadMore={() => setOpportunitiesLimit((prev) => prev + 12)}
+            />
           </div>
         )}
 
@@ -1139,7 +1261,7 @@ export function MarketingDashboardClient() {
                   </p>
                 </div>
               ) : (
-                filteredSequences.map((seq) => (
+                paginatedSequences.map((seq) => (
                   <ProspectSequenceCard
                     key={seq.key}
                     sequence={seq}
@@ -1156,6 +1278,14 @@ export function MarketingDashboardClient() {
                 ))
               )}
             </div>
+
+            {/* Infinite Scroll Sentinel for Outreach Sequences */}
+            <InfiniteScrollSentinel
+              hasMore={paginatedSequences.length < filteredSequences.length}
+              current={paginatedSequences.length}
+              total={filteredSequences.length}
+              onLoadMore={() => setSequencesLimit((prev) => prev + 8)}
+            />
           </div>
         )}
 

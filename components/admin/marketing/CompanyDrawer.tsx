@@ -114,9 +114,9 @@ export function CompanyDrawer({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#0F080A] border-l border-[#2C181B] h-full flex flex-col shadow-2xl overflow-y-auto">
+      <div className="w-full max-w-2xl bg-[#0F080A] border-l border-[#2C181B] h-full flex flex-col shadow-2xl overflow-y-auto custom-scrollbar">
         {/* Drawer Header */}
-        <div className="sticky top-0 bg-[#140A0D]/95 backdrop-blur-md p-6 border-b border-[#2C181B] flex items-start justify-between gap-4 z-10">
+        <div className="sticky top-0 bg-[#140A0D]/95 backdrop-blur-md p-4 sm:p-6 border-b border-[#2C181B] flex items-start justify-between gap-4 z-10">
           <div>
             <div className="flex items-center gap-2.5 mb-2">
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider border ${getPriorityColor(company.lead_priority)}`}>

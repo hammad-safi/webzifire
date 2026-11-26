@@ -58,14 +58,14 @@ export function PipelineKanban({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 overflow-x-auto pb-4">
+    <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory custom-scrollbar scroll-smooth">
       {STAGES.map((stage) => {
         const stageCompanies = getStageCompanies(stage.id);
 
         return (
           <div
             key={stage.id}
-            className="flex flex-col bg-[#120709] border border-[#2C181B] rounded-2xl min-w-[240px] max-h-[800px]"
+            className="flex flex-col bg-[#120709] border border-[#2C181B] rounded-2xl w-[280px] sm:w-[300px] shrink-0 snap-start max-h-[800px] shadow-lg"
           >
             {/* Stage Header */}
             <div className="p-3.5 border-b border-[#2C181B] flex items-center justify-between">
@@ -78,7 +78,7 @@ export function PipelineKanban({
             </div>
 
             {/* Cards List */}
-            <div className="p-3 space-y-3 overflow-y-auto flex-1">
+            <div className="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
               {stageCompanies.length === 0 ? (
                 <div className="text-center py-8 text-[11px] font-mono text-[#8A8175]">
                   No prospects in {stage.label.toLowerCase()}
