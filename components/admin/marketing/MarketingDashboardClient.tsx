@@ -145,7 +145,7 @@ export function MarketingDashboardClient() {
     target_industries: "SaaS, Software Agency, Technology Startup, Cloud Services",
     target_technologies: "Next.js, React, Node.js, TypeScript, PostgreSQL, MongoDB",
     min_lead_score: 50,
-    meeting_booking_url: "https://cal.com/webzen",
+    meeting_booking_url: "https://cal.com/webzifire",
     include_meeting_link: true,
     portfolio_matching_enabled: true
   });
@@ -1361,7 +1361,7 @@ export function MarketingDashboardClient() {
                     <label className="block text-[#B8AEA3] mb-1.5">Your Booking URL:</label>
                     <input
                       type="url"
-                      placeholder="https://cal.com/webzen"
+                      placeholder="https://cal.com/webzifire"
                       value={campaignConfig.meeting_booking_url}
                       onChange={(e) => setCampaignConfig({ ...campaignConfig, meeting_booking_url: e.target.value })}
                       className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
