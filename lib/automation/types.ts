@@ -16,7 +16,13 @@ export type JobType =
   | "publish_article"
   | "sync_seo_metrics"
   | "verify_facts"
-  | "content_refresh";
+  | "content_refresh"
+  | "b2b_company_discovery"
+  | "b2b_company_research"
+  | "b2b_qualification"
+  | "b2b_decision_maker"
+  | "b2b_opportunity"
+  | "b2b_outreach";
 
 export type JobStatus = "pending" | "running" | "completed" | "failed";
 

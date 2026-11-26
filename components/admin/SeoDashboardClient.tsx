@@ -34,6 +34,7 @@ import {
   Layers,
   Send,
 } from "lucide-react";
+import { AdminNavHeader } from "./AdminNavHeader";
 
 export interface DashboardArticle {
   id: string;
@@ -743,6 +744,8 @@ export default function SeoDashboardClient() {
   return (
     <div className="min-h-screen bg-[#0B0607] text-[#F5EFE6] pt-28 pb-20 px-4 sm:px-8 lg:px-14">
       <div className="max-w-[1380px] mx-auto flex flex-col gap-8">
+        <AdminNavHeader currentModule="seo" />
+
         {/* Top Bar */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-[#2C181B]">
           <div>
