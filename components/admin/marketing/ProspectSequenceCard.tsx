@@ -12,12 +12,8 @@ import {
   CheckCircle2,
   ExternalLink,
   Loader2,
-  Calendar,
   Sparkles,
-  ShieldCheck,
-  Edit3,
-  Save,
-  Plus
+  ShieldCheck
 } from "lucide-react";
 import { OutreachRecord } from "@/lib/marketing/types";
 import { auditEmailSpamShield } from "@/lib/marketing/spamShield";
@@ -55,7 +51,6 @@ interface ProspectSequenceCardProps {
   sequence: ProspectSequenceGroup;
   copiedId: string | null;
   sendingEmailId: string | null;
-  meetingUrl?: string;
   onCopyText: (text: string, id: string) => void;
   onLaunchLinkedIn: (msg: OutreachRecord) => void;
   onDirectSendEmail: (outreachId: string) => Promise<void>;
@@ -68,7 +63,6 @@ export function ProspectSequenceCard({
   sequence,
   copiedId,
   sendingEmailId,
-  meetingUrl,
   onCopyText,
   onLaunchLinkedIn,
   onDirectSendEmail,
@@ -81,70 +75,12 @@ export function ProspectSequenceCard({
     sequence.hasFollowUpDue && sequence.followUpEmail ? "follow_up" : "initial_email"
   );
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState("");
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  const effectiveMeetingUrl = meetingUrl || "https://cal.com/webzifire";
-
   const activeMsg: OutreachRecord | undefined =
     activeStep === "initial_email"
       ? sequence.initialEmail
       : activeStep === "follow_up"
       ? sequence.followUpEmail
       : sequence.linkedinMessage;
-
-  React.useEffect(() => {
-    setIsEditing(false);
-    setEditedContent(activeMsg?.message_content || "");
-  }, [activeMsg]);
-
-  const handleInsertMeetingLink = async () => {
-    if (!effectiveMeetingUrl || !activeMsg) return;
-    const linkText = `\n\nIf you're open to a brief chat next week, feel free to pick a time here: ${effectiveMeetingUrl}`;
-    let updated = activeMsg.message_content;
-    if (updated.includes("cal.com/webzen")) {
-      updated = updated.replace(/https?:\/\/cal\.com\/webzen/g, effectiveMeetingUrl);
-    } else if (!updated.includes(effectiveMeetingUrl)) {
-      updated = `${updated.trim()}${linkText}`;
-    }
-    setSavingEdit(true);
-    try {
-      const res = await fetch("/api/admin/marketing/outreach", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: activeMsg.id, message_content: updated })
-      });
-      if (res.ok) {
-        activeMsg.message_content = updated;
-        setEditedContent(updated);
-      }
-    } catch (err) {
-      console.error("Error inserting meeting link:", err);
-    } finally {
-      setSavingEdit(false);
-    }
-  };
-
-  const handleSaveMessageContent = async () => {
-    if (!activeMsg) return;
-    setSavingEdit(true);
-    try {
-      const res = await fetch("/api/admin/marketing/outreach", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: activeMsg.id, message_content: editedContent })
-      });
-      if (res.ok) {
-        activeMsg.message_content = editedContent;
-        setIsEditing(false);
-      }
-    } catch (err) {
-      console.error("Error saving message content:", err);
-    } finally {
-      setSavingEdit(false);
-    }
-  };
 
   return (
     <div
@@ -377,42 +313,10 @@ export function ProspectSequenceCard({
               );
             })()}
 
-            {/* Message Body (Editable) */}
-            {isEditing ? (
-              <div className="space-y-2">
-                <textarea
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  rows={8}
-                  className="w-full p-4 rounded-xl bg-[#14080B] border border-[#D6334A]/50 text-xs text-[#FAF7F2] font-sans leading-relaxed focus:outline-none focus:ring-1 focus:ring-[#D6334A] custom-scrollbar"
-                />
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSaveMessageContent}
-                    disabled={savingEdit}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D6334A] hover:bg-[#e0324b] text-white text-xs font-mono font-bold cursor-pointer disabled:opacity-50"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{savingEdit ? "Saving..." : "Save Message"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditedContent(activeMsg.message_content);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] text-zinc-400 hover:text-white text-xs font-mono cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 rounded-xl bg-[#180A0E] border border-[#2C181B] text-xs text-[#FAF7F2] whitespace-pre-wrap leading-relaxed font-sans">
-                {activeMsg.message_content}
-              </div>
-            )}
+            {/* Message Body */}
+            <div className="p-4 rounded-xl bg-[#180A0E] border border-[#2C181B] text-xs text-[#FAF7F2] whitespace-pre-wrap leading-relaxed font-sans">
+              {activeMsg.message_content}
+            </div>
 
             {/* Sequence Status Hint */}
             <div className="text-[11px] font-mono text-[#8A8175] flex items-center justify-between">
@@ -458,34 +362,6 @@ export function ProspectSequenceCard({
                   )}
                 </button>
 
-                {/* Inline Edit Message Toggle */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(!isEditing);
-                    setEditedContent(activeMsg.message_content);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-zinc-500 text-xs font-mono text-[#B8AEA3] hover:text-white transition-colors cursor-pointer"
-                  title="Edit message text before sending"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>{isEditing ? "Cancel Edit" : "Edit"}</span>
-                </button>
-
-                {/* Insert Meeting Link Button (when not yet in message) */}
-                {effectiveMeetingUrl && activeMsg.channel === "email" && !activeMsg.message_content.includes(effectiveMeetingUrl) && (
-                  <button
-                    type="button"
-                    onClick={handleInsertMeetingLink}
-                    disabled={savingEdit}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/20 text-xs font-mono text-amber-300 font-bold transition-all cursor-pointer"
-                    title={`Appends ${effectiveMeetingUrl} to this email body`}
-                  >
-                    <Plus className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Insert {effectiveMeetingUrl.replace("https://", "")}</span>
-                  </button>
-                )}
-
                 {/* Option A: Direct Send Email via SMTP */}
                 {activeMsg.channel === "email" && activeMsg.status !== "sent" && (
                   <button
@@ -518,21 +394,6 @@ export function ProspectSequenceCard({
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>Launch on LinkedIn</span>
-                  </button>
-                )}
-
-                {/* Idea 4: Quick 1-Click Copy Meeting Link */}
-                {meetingUrl && (
-                  <button
-                    type="button"
-                    onClick={() => onCopyText(meetingUrl, `meeting-${sequence.key}`)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-amber-500/50 text-xs font-mono text-amber-300 hover:text-white transition-colors cursor-pointer"
-                    title={`Copy Meeting Link: ${meetingUrl}`}
-                  >
-                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                    <span>
-                      {copiedId === `meeting-${sequence.key}` ? "Link Copied!" : "Meeting Link"}
-                    </span>
                   </button>
                 )}
               </div>

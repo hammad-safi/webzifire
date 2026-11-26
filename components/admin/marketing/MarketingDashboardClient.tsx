@@ -19,8 +19,6 @@ import {
   Clock,
   Layers,
   Flame,
-  Calendar,
-  Link2,
   Mail
 } from "lucide-react";
 import { AdminNavHeader } from "../AdminNavHeader";
@@ -136,18 +134,15 @@ export function MarketingDashboardClient() {
   const [runningSprint, setRunningSprint] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [sendingDigest, setSendingDigest] = useState(false);
-  const [syncingMeetingLink, setSyncingMeetingLink] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Settings form state (Idea 3 & Idea 4 integrated)
+  // Settings form state
   const [campaignConfig, setCampaignConfig] = useState({
     target_countries: "United States, United Kingdom, Canada, Australia, Germany, Netherlands, France",
     target_industries: "SaaS, Software Agency, Technology Startup, Cloud Services",
     target_technologies: "Next.js, React, Node.js, TypeScript, PostgreSQL, MongoDB",
     min_lead_score: 50,
-    meeting_booking_url: "https://cal.com/webzifire",
-    include_meeting_link: true,
     portfolio_matching_enabled: true
   });
 
@@ -171,51 +166,6 @@ export function MarketingDashboardClient() {
       localStorage.setItem("webzifire_campaign_config", JSON.stringify(campaignConfig));
     }
     setBanner({ type: "ok", text: "Campaign settings saved successfully to browser storage!" });
-  };
-
-  const handleApplyMeetingLinkToDrafts = async () => {
-    const targetUrl = (campaignConfig.meeting_booking_url || "https://cal.com/webzifire").trim();
-    if (!targetUrl) return;
-    setSyncingMeetingLink(true);
-    setBanner(null);
-    try {
-      const emailDrafts = outreachList.filter(
-        (o) => o.channel === "email" && (o.status === "draft" || o.status === "approved")
-      );
-      let updatedCount = 0;
-
-      for (const draft of emailDrafts) {
-        const content = draft.message_content || "";
-        let newContent = content;
-
-        if (newContent.includes("cal.com/webzen")) {
-          newContent = newContent.replace(/https?:\/\/cal\.com\/webzen/g, targetUrl);
-        } else if (!newContent.includes(targetUrl)) {
-          newContent = `${newContent.trim()}\n\nIf you're open to a brief chat next week, feel free to pick a time here: ${targetUrl}`;
-        }
-
-        if (newContent !== content) {
-          const res = await fetch("/api/admin/marketing/outreach", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: draft.id, message_content: newContent })
-          });
-          if (res.ok) {
-            updatedCount++;
-          }
-        }
-      }
-
-      await loadData();
-      setBanner({
-        type: "ok",
-        text: `Successfully synced ${targetUrl} across ${updatedCount} email draft(s)!`
-      });
-    } catch (err: any) {
-      setBanner({ type: "err", text: `Failed to update drafts: ${err.message}` });
-    } finally {
-      setSyncingMeetingLink(false);
-    }
   };
 
   const loadData = useCallback(async () => {
@@ -622,22 +572,24 @@ export function MarketingDashboardClient() {
   }, [filteredSequences, sequencesLimit]);
 
   return (
-    <div className="min-h-screen bg-[#070405] text-[#FAF7F2] pt-24 pb-20 px-4 sm:px-8 lg:px-12 font-sans">
-      <div className="max-w-[1440px] mx-auto space-y-6">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col bg-[#070405] text-[#FAF7F2] pt-20 pb-4 px-4 sm:px-8 lg:px-12 font-sans">
+      <div className="max-w-[1440px] mx-auto w-full flex-1 flex flex-col min-h-0 space-y-3">
         {/* Navigation Switcher */}
-        <AdminNavHeader currentModule="marketing" />
+        <div className="shrink-0">
+          <AdminNavHeader currentModule="marketing" />
+        </div>
 
         {/* Header Action Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#2C181B]">
+        <div className="shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-[#2C181B]">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#180A0E] border border-[#2C181B] font-mono text-[11px] uppercase tracking-wider text-[#D6334A] mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#180A0E] border border-[#2C181B] font-mono text-[11px] uppercase tracking-wider text-[#D6334A] mb-1.5">
               <Target className="w-3.5 h-3.5" />
               <span>WebziFire Autonomous Prospecting &amp; Lead Intelligence</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-light font-display text-[#FAF7F2]">
+            <h1 className="text-2xl sm:text-3xl font-light font-display text-[#FAF7F2]">
               B2B Marketing &amp; Client Acquisition Engine
             </h1>
-            <p className="text-xs font-mono text-[#8A8175] mt-1">
+            <p className="text-xs font-mono text-[#8A8175] mt-0.5">
               Targeting: US, UK, Canada, Australia, Europe • Tech Stack: Next.js, React, Node.js, TypeScript, PostgreSQL, Custom SaaS &amp; ERP
             </p>
           </div>
@@ -672,7 +624,7 @@ export function MarketingDashboardClient() {
         {/* Banner */}
         {banner && (
           <div
-            className={`p-4 rounded-xl border text-xs font-mono flex items-center justify-between gap-4 ${
+            className={`shrink-0 p-3 rounded-xl border text-xs font-mono flex items-center justify-between gap-4 ${
               banner.type === "ok"
                 ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-200"
                 : "bg-rose-950/40 border-rose-500/40 text-rose-200"
@@ -690,7 +642,7 @@ export function MarketingDashboardClient() {
         )}
 
         {/* Tab Controls (Mobile Horizontal Swipe + Desktop Wrap) */}
-        <div className="flex items-center gap-2 border-b border-[#2C181B] pb-3 text-xs font-mono overflow-x-auto no-scrollbar scroll-smooth flex-nowrap sm:flex-wrap">
+        <div className="shrink-0 flex items-center gap-2 border-b border-[#2C181B] pb-2 text-xs font-mono overflow-x-auto no-scrollbar scroll-smooth flex-nowrap sm:flex-wrap">
           {[
             { id: "overview", label: "📈 Overview & Telemetry" },
             { id: "companies", label: `🏢 Companies (${companies.length})` },
@@ -723,7 +675,7 @@ export function MarketingDashboardClient() {
 
         {/* TAB 1: OVERVIEW & TELEMETRY */}
         {activeTab === "overview" && (
-          <div className="space-y-6">
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6 pr-1 pb-6">
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
               <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-1">
@@ -898,9 +850,9 @@ export function MarketingDashboardClient() {
 
         {/* TAB 2: COMPANIES DIRECTORY */}
         {activeTab === "companies" && (
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
             {/* Search & Filter Bar */}
-            <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="shrink-0 p-3 sm:p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-96">
                 <Search className="w-4 h-4 text-[#8A8175] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -942,10 +894,10 @@ export function MarketingDashboardClient() {
               </div>
             </div>
 
-            {/* Companies Table */}
-            <div className="overflow-x-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner">
-              <table className="w-full text-left text-xs font-mono min-w-[780px]">
-                <thead className="bg-[#1A0C10] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px]">
+            {/* Companies Table (Fixed with sticky header and internal scroll only) */}
+            <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner relative">
+              <table className="w-full text-left text-xs font-mono min-w-[780px] border-collapse">
+                <thead className="sticky top-0 z-20 bg-[#16080B] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px] shadow-sm">
                   <tr>
                     <th className="p-4">Company &amp; Domain</th>
                     <th className="p-4">Location</th>
@@ -1065,10 +1017,10 @@ export function MarketingDashboardClient() {
 
         {/* TAB 3: DECISION-MAKERS */}
         {activeTab === "contacts" && (
-          <div className="space-y-4">
-            <div className="overflow-x-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner">
-              <table className="w-full text-left text-xs font-mono min-w-[760px]">
-                <thead className="bg-[#1A0C10] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px]">
+          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
+            <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner relative">
+              <table className="w-full text-left text-xs font-mono min-w-[760px] border-collapse">
+                <thead className="sticky top-0 z-20 bg-[#16080B] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px] shadow-sm">
                   <tr>
                     <th className="p-4">Contact Name &amp; Title</th>
                     <th className="p-4">Company</th>
@@ -1162,85 +1114,89 @@ export function MarketingDashboardClient() {
 
         {/* TAB 4: OPPORTUNITIES & JOBS */}
         {activeTab === "opportunities" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {opportunities.length === 0 ? (
-                <div className="col-span-3 p-8 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B]">
-                  No opportunities detected yet. Run an AI Prospecting Sprint to identify engineering jobs and client development contracts.
-                </div>
-              ) : (
-                paginatedOpportunities.map((opp: OpportunityRecord) => (
-                  <div
-                    key={opp.id}
-                    className="p-5 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          {opp.opportunity_type}
-                        </span>
-                        <span className="text-xs font-mono font-bold text-[#D6334A]">
-                          {opp.match_score}% Match
-                        </span>
-                      </div>
-
-                      <h4 className="text-base font-medium text-white">{opp.title}</h4>
-                      <p className="text-xs font-mono text-[#8A8175]">
-                        Target: {opp.b2b_companies?.name || "Company"}
-                      </p>
-
-                      <p className="text-xs text-[#D6CEC5] leading-relaxed line-clamp-3">
-                        {opp.description}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 pt-2 border-t border-[#2C181B]/50">
-                      {opp.match_rationale && (
-                        <p className="text-[11px] text-[#B8AEA3] italic">
-                          💡 Pitch Angle: {opp.match_rationale}
-                        </p>
-                      )}
-
-                      <div className="flex flex-wrap gap-1">
-                        {(opp.required_skills || []).map((sk: string, i: number) => (
-                          <span
-                            key={i}
-                            className="px-2 py-0.5 rounded text-[9px] font-mono bg-[#1A0C10] text-[#B8AEA3] border border-[#2C181B]"
-                          >
-                            {sk}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {opportunities.length === 0 ? (
+                  <div className="col-span-3 p-8 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B]">
+                    No opportunities detected yet. Run an AI Prospecting Sprint to identify engineering jobs and client development contracts.
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  paginatedOpportunities.map((opp: OpportunityRecord) => (
+                    <div
+                      key={opp.id}
+                      className="p-5 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-3 flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            {opp.opportunity_type}
+                          </span>
+                          <span className="text-xs font-mono font-bold text-[#D6334A]">
+                            {opp.match_score}% Match
+                          </span>
+                        </div>
 
-            {/* Infinite Scroll Sentinel for Opportunities */}
-            <InfiniteScrollSentinel
-              hasMore={paginatedOpportunities.length < opportunities.length}
-              current={paginatedOpportunities.length}
-              total={opportunities.length}
-              onLoadMore={() => setOpportunitiesLimit((prev) => prev + 12)}
-            />
+                        <h4 className="text-base font-medium text-white">{opp.title}</h4>
+                        <p className="text-xs font-mono text-[#8A8175]">
+                          Target: {opp.b2b_companies?.name || "Company"}
+                        </p>
+
+                        <p className="text-xs text-[#D6CEC5] leading-relaxed line-clamp-3">
+                          {opp.description}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 pt-2 border-t border-[#2C181B]/50">
+                        {opp.match_rationale && (
+                          <p className="text-[11px] text-[#B8AEA3] italic">
+                            💡 Pitch Angle: {opp.match_rationale}
+                          </p>
+                        )}
+
+                        <div className="flex flex-wrap gap-1">
+                          {(opp.required_skills || []).map((sk: string, i: number) => (
+                            <span
+                              key={i}
+                              className="px-2 py-0.5 rounded text-[9px] font-mono bg-[#1A0C10] text-[#B8AEA3] border border-[#2C181B]"
+                            >
+                              {sk}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Infinite Scroll Sentinel for Opportunities */}
+              <InfiniteScrollSentinel
+                hasMore={paginatedOpportunities.length < opportunities.length}
+                current={paginatedOpportunities.length}
+                total={opportunities.length}
+                onLoadMore={() => setOpportunitiesLimit((prev) => prev + 12)}
+              />
+            </div>
           </div>
         )}
 
         {/* TAB 5: PIPELINE KANBAN */}
         {activeTab === "kanban" && (
-          <PipelineKanban
-            companies={companies}
-            onSelectCompany={handleOpenCompanyDrawer}
-            onUpdateStatus={handleUpdateCompanyStatus}
-          />
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            <PipelineKanban
+              companies={companies}
+              onSelectCompany={handleOpenCompanyDrawer}
+              onUpdateStatus={handleUpdateCompanyStatus}
+            />
+          </div>
         )}
 
         {/* TAB 6: OUTREACH DESK */}
         {activeTab === "outreach" && (
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
             {/* Outreach Desk Header & Filter Bar */}
-            <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="shrink-0 p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-sm font-mono font-bold text-white uppercase flex items-center gap-2">
                   <span>Prospect Outreach Sequences &amp; 4-Day Alarms</span>
@@ -1318,7 +1274,7 @@ export function MarketingDashboardClient() {
             </div>
 
             {/* Grouped Prospect Sequences List */}
-            <div className="space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 pr-1 pb-4">
               {filteredSequences.length === 0 ? (
                 <div className="p-10 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B] space-y-2">
                   <p>No prospect sequences match this filter.</p>
@@ -1335,7 +1291,6 @@ export function MarketingDashboardClient() {
                     sequence={seq}
                     copiedId={copiedId}
                     sendingEmailId={sendingEmailId}
-                    meetingUrl={campaignConfig.include_meeting_link ? campaignConfig.meeting_booking_url : undefined}
                     onCopyText={copyText}
                     onLaunchLinkedIn={handleLaunchLinkedIn}
                     onDirectSendEmail={handleDirectSendEmail}
@@ -1345,148 +1300,76 @@ export function MarketingDashboardClient() {
                   />
                 ))
               )}
-            </div>
 
-            {/* Infinite Scroll Sentinel for Outreach Sequences */}
-            <InfiniteScrollSentinel
-              hasMore={paginatedSequences.length < filteredSequences.length}
-              current={paginatedSequences.length}
-              total={filteredSequences.length}
-              onLoadMore={() => setSequencesLimit((prev) => prev + 8)}
-            />
+              {/* Infinite Scroll Sentinel for Outreach Sequences */}
+              <InfiniteScrollSentinel
+                hasMore={paginatedSequences.length < filteredSequences.length}
+                current={paginatedSequences.length}
+                total={filteredSequences.length}
+                onLoadMore={() => setSequencesLimit((prev) => prev + 8)}
+              />
+            </div>
           </div>
         )}
 
         {/* TAB 7: CAMPAIGN CONFIGURATION */}
         {activeTab === "settings" && (
-          <div className="p-6 rounded-2xl bg-[#120709] border border-[#2C181B] max-w-3xl space-y-6">
-            <div>
-              <h3 className="text-base font-mono uppercase font-bold text-white">
-                Campaign Targeting &amp; Lead Qualification Settings
-              </h3>
-              <p className="text-xs text-[#8A8175] font-mono mt-1">
-                Customize target international markets, industry verticals, company size limits, and minimum lead score thresholds.
-              </p>
-            </div>
-
-            <div className="space-y-4 text-xs font-mono">
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 pb-6">
+            <div className="p-6 rounded-2xl bg-[#120709] border border-[#2C181B] max-w-3xl space-y-6">
               <div>
-                <label className="block text-[#B8AEA3] mb-1.5">Target Countries (comma-separated):</label>
-                <input
-                  type="text"
-                  value={campaignConfig.target_countries}
-                  onChange={(e) => setCampaignConfig({ ...campaignConfig, target_countries: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#B8AEA3] mb-1.5">Target Industries &amp; Verticals:</label>
-                <input
-                  type="text"
-                  value={campaignConfig.target_industries}
-                  onChange={(e) => setCampaignConfig({ ...campaignConfig, target_industries: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#B8AEA3] mb-1.5">Target Technologies / Stack Focus:</label>
-                <input
-                  type="text"
-                  value={campaignConfig.target_technologies}
-                  onChange={(e) => setCampaignConfig({ ...campaignConfig, target_technologies: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#B8AEA3] mb-1.5">Minimum ICP Lead Qualification Score (0–100):</label>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={campaignConfig.min_lead_score}
-                  onChange={(e) => setCampaignConfig({ ...campaignConfig, min_lead_score: parseInt(e.target.value, 10) || 50 })}
-                  className="w-32 p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
-                />
-              </div>
-
-              {/* IDEA 4: MEETING BOOKING LINK SETTINGS */}
-              <div className="pt-6 border-t border-[#2C181B] space-y-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-amber-400" />
-                  <h4 className="text-sm font-mono font-bold text-white uppercase">
-                    Meeting Booking Link (Cal.com / Calendly)
-                  </h4>
-                </div>
-                <p className="text-xs text-[#8A8175] font-mono">
-                  When enabled, AI automatically attaches your calendar link as a frictionless CTA at the end of Cold Emails &amp; Follow-Ups.
+                <h3 className="text-base font-mono uppercase font-bold text-white">
+                  Campaign Targeting &amp; Lead Qualification Settings
+                </h3>
+                <p className="text-xs text-[#8A8175] font-mono mt-1">
+                  Customize target international markets, industry verticals, company size limits, and minimum lead score thresholds.
                 </p>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[#B8AEA3] mb-1.5">Your Booking URL:</label>
-                    <input
-                      type="url"
-                      placeholder="https://cal.com/webzifire"
-                      value={campaignConfig.meeting_booking_url}
-                      onChange={(e) => setCampaignConfig({ ...campaignConfig, meeting_booking_url: e.target.value })}
-                      className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
-                    />
-                  </div>
-                  <div className="flex items-end pb-1">
-                    {campaignConfig.meeting_booking_url && (
-                      <a
-                        href={campaignConfig.meeting_booking_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1C0D11] hover:bg-[#2C181B] text-amber-300 border border-amber-500/30 text-xs font-mono transition-all"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Test Booking Link</span>
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-1">
+              <div className="space-y-4 text-xs font-mono">
+                <div>
+                  <label className="block text-[#B8AEA3] mb-1.5">Target Countries (comma-separated):</label>
                   <input
-                    type="checkbox"
-                    id="includeMeetingToggle"
-                    checked={campaignConfig.include_meeting_link}
-                    onChange={(e) => setCampaignConfig({ ...campaignConfig, include_meeting_link: e.target.checked })}
-                    className="w-4 h-4 rounded border-[#2C181B] text-[#D6334A] focus:ring-[#D6334A] bg-[#1A0C10] cursor-pointer"
+                    type="text"
+                    value={campaignConfig.target_countries}
+                    onChange={(e) => setCampaignConfig({ ...campaignConfig, target_countries: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
                   />
-                  <label htmlFor="includeMeetingToggle" className="text-xs font-mono text-[#FAF7F2] cursor-pointer">
-                    Automatically weave meeting link into Cold Email &amp; Follow-Up calls-to-action
-                  </label>
                 </div>
 
-                {/* Instant 1-Click Sync for all existing drafts */}
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleApplyMeetingLinkToDrafts}
-                    disabled={syncingMeetingLink}
-                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 font-mono text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {syncingMeetingLink ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Syncing drafts with {campaignConfig.meeting_booking_url}...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Apply {campaignConfig.meeting_booking_url.replace("https://", "")} to All Existing Drafts</span>
-                      </>
-                    )}
-                  </button>
+                <div>
+                  <label className="block text-[#B8AEA3] mb-1.5">Target Industries &amp; Verticals:</label>
+                  <input
+                    type="text"
+                    value={campaignConfig.target_industries}
+                    onChange={(e) => setCampaignConfig({ ...campaignConfig, target_industries: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#B8AEA3] mb-1.5">Target Technologies / Stack Focus:</label>
+                  <input
+                    type="text"
+                    value={campaignConfig.target_technologies}
+                    onChange={(e) => setCampaignConfig({ ...campaignConfig, target_technologies: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#B8AEA3] mb-1.5">Minimum ICP Lead Qualification Score (0–100):</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={campaignConfig.min_lead_score}
+                    onChange={(e) => setCampaignConfig({ ...campaignConfig, min_lead_score: parseInt(e.target.value, 10) || 50 })}
+                    className="w-32 p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
+                  />
                 </div>
               </div>
 
-              {/* IDEA 3: SMART PORTFOLIO PROOF ENGINE SHOWCASE */}
+              {/* SMART PORTFOLIO PROOF ENGINE SHOWCASE */}
               <div className="pt-6 border-t border-[#2C181B] space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1534,22 +1417,13 @@ export function MarketingDashboardClient() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#2C181B] flex flex-wrap items-center gap-3">
+              <div className="pt-4 border-t border-[#2C181B]">
                 <button
                   type="button"
                   onClick={handleSaveCampaignConfig}
                   className="px-5 py-2.5 rounded-xl bg-[#D6334A] hover:bg-[#e0324b] text-white font-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#D6334A]/30"
                 >
                   Save Campaign Configuration
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApplyMeetingLinkToDrafts}
-                  disabled={syncingMeetingLink}
-                  className="px-4 py-2.5 rounded-xl bg-[#1C0D11] hover:bg-[#2C181B] border border-amber-500/30 text-amber-300 font-mono text-xs font-bold transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
-                >
-                  {syncingMeetingLink ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-amber-400" />}
-                  <span>Sync {campaignConfig.meeting_booking_url.replace("https://", "")} into All Drafts</span>
                 </button>
               </div>
             </div>
