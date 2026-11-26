@@ -20,7 +20,8 @@ import {
   Layers,
   Flame,
   Calendar,
-  Link2
+  Link2,
+  Mail
 } from "lucide-react";
 import { AdminNavHeader } from "../AdminNavHeader";
 import { CompanyDrawer } from "./CompanyDrawer";
@@ -67,6 +68,7 @@ export function MarketingDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [runningSprint, setRunningSprint] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+  const [sendingDigest, setSendingDigest] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -275,6 +277,36 @@ export function MarketingDashboardClient() {
       }
     } catch (err) {
       console.error("Error marking outreach replied:", err);
+    }
+  };
+
+  // Idea 6: Send Daily Morning Founder Digest
+  const handleSendDailyDigest = async () => {
+    try {
+      setSendingDigest(true);
+      const res = await fetch("/api/admin/marketing/digest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to_email: "support@webzen.cloud" })
+      });
+      const data = await res.json();
+      if (res.ok && data.emailSent) {
+        setBanner({
+          type: "ok",
+          text: `Daily Founder Digest delivered via SMTP to ${data.sentTo}!`
+        });
+      } else if (res.ok && !data.emailSent) {
+        setBanner({
+          type: "ok",
+          text: "Daily Digest generated successfully. (Configure SMTP in .env.local to deliver directly to your phone/inbox)."
+        });
+      } else {
+        setBanner({ type: "err", text: data.error || "Failed to dispatch digest" });
+      }
+    } catch (err: any) {
+      setBanner({ type: "err", text: err?.message || "Error dispatching daily digest" });
+    } finally {
+      setSendingDigest(false);
     }
   };
 
@@ -660,6 +692,39 @@ export function MarketingDashboardClient() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* IDEA 6: DAILY MORNING FOUNDER DIGEST CARD */}
+            <div className="p-5 rounded-2xl bg-[#15080B] border border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Daily Founder Digest
+                  </span>
+                  <h4 className="text-sm font-mono font-bold text-white uppercase">
+                    Morning Intelligence &amp; 4-Day Follow-Up Brief
+                  </h4>
+                </div>
+                <p className="text-xs text-[#8A8175] font-mono">
+                  Compiles a concise summary of new hot leads, 4-day follow-up alarms due today, and drafts awaiting review.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleSendDailyDigest}
+                  disabled={sendingDigest}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#D6334A] hover:bg-[#e0324b] text-white font-mono text-xs font-bold transition-all shadow-md shadow-[#D6334A]/20 cursor-pointer disabled:opacity-50"
+                >
+                  {sendingDigest ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5" />
+                  )}
+                  <span>{sendingDigest ? "Dispatching Digest..." : "Send Digest to My Email (1-Click)"}</span>
+                </button>
               </div>
             </div>
           </div>

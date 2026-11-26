@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAuthenticatedAdmin } from "@/lib/auth/adminAuth";
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabase";
 import { sendDirectMarketingEmail, isSmtpConfigured } from "@/lib/email/mailer";
+import { auditEmailSpamShield } from "@/lib/marketing/spamShield";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,19 @@ export async function POST(req: Request) {
     }
 
     const subject = outreach.subject || `Inquiry for ${outreach.b2b_companies?.name || "your team"}`;
+
+    // Idea 5: Email Spam & Bounce Shield (Pre-flight deliverability check)
+    const shieldResult = auditEmailSpamShield(targetEmail, subject, outreach.message_content);
+    if (!shieldResult.isSafeToSend) {
+      return NextResponse.json(
+        {
+          error: `Spam & Bounce Shield: ${shieldResult.issues.join("; ")}`,
+          shield: shieldResult
+        },
+        { status: 422 }
+      );
+    }
+
     const sendResult = await sendDirectMarketingEmail({
       to: targetEmail,
       subject,

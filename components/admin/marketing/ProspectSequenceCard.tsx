@@ -13,9 +13,11 @@ import {
   ExternalLink,
   Loader2,
   Calendar,
-  Sparkles
+  Sparkles,
+  ShieldCheck
 } from "lucide-react";
 import { OutreachRecord } from "@/lib/marketing/types";
+import { auditEmailSpamShield } from "@/lib/marketing/spamShield";
 
 export interface MatchedProofInfo {
   title: string;
@@ -284,6 +286,35 @@ export function ProspectSequenceCard({
                 <strong className="text-[#8A8175]">Subject:</strong> {activeMsg.subject}
               </div>
             )}
+
+            {/* Idea 5: Email Spam & Bounce Shield deliverability score */}
+            {activeMsg.channel === "email" && (() => {
+              const shield = auditEmailSpamShield(sequence.contactEmail, activeMsg.subject, activeMsg.message_content);
+              return (
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-[#14080B] border border-[#2C181B] text-[11px] font-mono">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className={`w-3.5 h-3.5 ${shield.isSafeToSend ? "text-emerald-400" : "text-amber-400"}`} />
+                    <span className="text-white font-semibold">
+                      Spam Shield: {shield.score}/100
+                    </span>
+                    <span className="text-[#8A8175] hidden sm:inline">
+                      {shield.isSafeToSend
+                        ? "— Clean deliverability, zero spam trigger words"
+                        : `— Warning: ${shield.issues[0] || "Review copy"}`}
+                    </span>
+                  </div>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                      shield.isSafeToSend
+                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                        : "bg-amber-500/10 text-amber-300 border border-amber-500/20"
+                    }`}
+                  >
+                    {shield.rating === "clean" ? "Primary Inbox Ready" : shield.rating}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Message Body */}
             <div className="p-4 rounded-xl bg-[#180A0E] border border-[#2C181B] text-xs text-[#FAF7F2] whitespace-pre-wrap leading-relaxed font-sans">

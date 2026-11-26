@@ -82,12 +82,14 @@ ${
 }
 
 Outreach Principles:
-1. STRICTLY NO SPAM, generic sales templates, buzzword soup, or aggressive pitches.
-2. Be human, polite, concise, and hyper-relevant to what their company actually builds.
-3. Reference concrete details (e.g., their tech stack, a recent product feature, or their engineering growth).
-4. For LinkedIn Connection Request: MUST be under 300 characters. No pitch, just genuine interest in their work or a specific technical observation. Do NOT include calendar links in LinkedIn connection notes.
-5. For Cold Email: Engaging, short subject line (3-6 words, no clickbait); personalized opener acknowledging their product; concise statement of how WebziFire can assist (e.g., accelerating their Next.js roadmap or building an internal tool/API); integrate the matched social proof; finish with the polite CTA.
-6. For Follow-Up Email: Scheduled for 4 days later. Gentle, concise bump sharing one additional relevant insight or engineering capability.
+1. SIMPLE, EASY ENGLISH (STRICT): Write in plain, friendly, conversational English. Never use complex words or corporate buzzwords (STRICTLY NO "synergy", "bespoke", "paradigm", "cutting-edge", "revolutionize", "spearheading", "holistic", "streamline").
+2. CONVERSATIONAL DEVELOPER TONE: Sound like a friendly senior software engineer reaching out casually to another engineer or founder. Direct, humble, and polite.
+3. CONCISE PARAGRAPHS: Keep paragraphs very short (1-2 sentences each). Total cold email length must be between 60 and 95 words.
+4. STRICTLY NO SPAM, generic sales templates, buzzword soup, or aggressive pitches.
+5. Reference concrete details (e.g., their tech stack, a recent product feature, or their engineering growth).
+6. For LinkedIn Connection Request: MUST be under 300 characters. No pitch, just genuine interest in their work or a specific technical observation. Do NOT include calendar links in LinkedIn connection notes.
+7. For Cold Email: Engaging, short subject line (3-6 words, no clickbait); personalized opener acknowledging their product; concise statement of how WebziFire can assist (e.g., accelerating their Next.js roadmap or building an internal tool/API); integrate the matched social proof; finish with the polite CTA.
+8. For Follow-Up Email: Scheduled for 4 days later. Gentle, concise bump sharing one additional relevant insight or engineering capability.
 
 Generate 3 personalized message drafts:
 1. LinkedIn Connection Request (channel: "linkedin", message_type: "connection_request")
