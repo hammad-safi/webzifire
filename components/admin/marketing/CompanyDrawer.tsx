@@ -47,6 +47,7 @@ export function CompanyDrawer({
   onUpdateCompanyStatus
 }: CompanyDrawerProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "contacts" | "opportunities" | "outreach">("overview");
 
   if (!isOpen || !company) return null;
@@ -55,6 +56,39 @@ export function CompanyDrawer({
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleSendEmail = async (outreachId: string) => {
+    setSendingEmailId(outreachId);
+    try {
+      const res = await fetch("/api/admin/marketing/outreach/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: outreachId })
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        alert(json.error || "Failed to deliver email.");
+      } else {
+        alert(`Email delivered successfully to ${json.sent_to}!`);
+        await onMarkSentOutreach(outreachId);
+      }
+    } catch (err: any) {
+      alert(err.message || "Error sending email");
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
+
+  const handleLaunchLinkedIn = (msg: OutreachRecord) => {
+    copyText(msg.message_content, msg.id);
+    const contact = contacts.find((c) => c.id === msg.contact_id);
+    const url = contact?.linkedin_url || company?.linkedin_url;
+    if (url && url.startsWith("http")) {
+      window.open(url, "_blank");
+    } else {
+      window.open(`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(contact?.full_name || "")}`, "_blank");
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -436,14 +470,27 @@ export function CompanyDrawer({
                     key={msg.id}
                     className="p-5 rounded-2xl bg-[#160B0F] border border-[#2C181B] space-y-3"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-[#1C0D11] text-[#D6334A] border border-[#2C181B] font-bold">
                           {msg.channel === "linkedin" ? "LINKEDIN" : "EMAIL"}
                         </span>
-                        <span className="text-xs font-mono text-[#8A8175] capitalize">
-                          {msg.message_type.replace(/_/g, " ")}
-                        </span>
+                        
+                        {msg.message_type === "cold_email" && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                            ⚡ Step 1: Initial Email
+                          </span>
+                        )}
+                        {msg.message_type === "follow_up" && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                            ⏳ Step 2: 4-Day Follow-Up (If no reply)
+                          </span>
+                        )}
+                        {msg.message_type === "connection_request" && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold">
+                            💼 Step 1: LinkedIn Connect
+                          </span>
+                        )}
                       </div>
 
                       <span
@@ -471,23 +518,56 @@ export function CompanyDrawer({
 
                     {/* Actions */}
                     <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#2C181B]/60">
-                      <button
-                        type="button"
-                        onClick={() => copyText(msg.message_content, msg.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-[#D6334A]/50 text-xs font-mono text-[#B8AEA3] hover:text-white transition-colors cursor-pointer"
-                      >
-                        {copiedId === msg.id ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copy Message</span>
-                          </>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => copyText(msg.message_content, msg.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-[#D6334A]/50 text-xs font-mono text-[#B8AEA3] hover:text-white transition-colors cursor-pointer"
+                        >
+                          {copiedId === msg.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy Text</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* LinkedIn Option A */}
+                        {msg.channel === "linkedin" && (
+                          <button
+                            type="button"
+                            onClick={() => handleLaunchLinkedIn(msg)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-sky-600/20 cursor-pointer"
+                            title="Copies text and opens LinkedIn profile"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Launch on LinkedIn</span>
+                          </button>
                         )}
-                      </button>
+
+                        {/* Email Option A */}
+                        {msg.channel === "email" && msg.status !== "sent" && (
+                          <button
+                            type="button"
+                            onClick={() => handleSendEmail(msg.id)}
+                            disabled={sendingEmailId === msg.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                            title="Sends this cold email directly via business SMTP"
+                          >
+                            {sendingEmailId === msg.id ? (
+                              <Clock className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5" />
+                            )}
+                            <span>{sendingEmailId === msg.id ? "Sending SMTP..." : "Send via SMTP (1-Click)"}</span>
+                          </button>
+                        )}
+                      </div>
 
                       <div className="flex items-center gap-2">
                         {msg.status === "draft" && (
@@ -497,7 +577,7 @@ export function CompanyDrawer({
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D6334A]/20 hover:bg-[#D6334A] text-white border border-[#D6334A]/50 text-xs font-mono font-medium transition-all cursor-pointer"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Approve Draft</span>
+                            <span>Approve</span>
                           </button>
                         )}
 
@@ -505,9 +585,9 @@ export function CompanyDrawer({
                           <button
                             type="button"
                             onClick={() => onMarkSentOutreach(msg.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-200 hover:text-white border border-emerald-500/40 text-xs font-mono font-medium transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] hover:bg-[#2C181B] text-[#B8AEA3] hover:text-white border border-[#2C181B] text-xs font-mono transition-all cursor-pointer"
                           >
-                            <Send className="w-3.5 h-3.5" />
+                            <Send className="w-3 h-3" />
                             <span>Mark as Sent</span>
                           </button>
                         )}

@@ -814,3 +814,40 @@ export async function sendLeadAlertEmail(params: {
     html,
   });
 }
+
+/**
+ * Direct B2B Cold Outreach email dispatcher via SMTP or Resend
+ */
+export async function sendDirectMarketingEmail(params: {
+  to: string;
+  subject: string;
+  content: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(params.subject)}</title>
+</head>
+<body style="margin:0;padding:16px;background-color:#ffffff;color:#1a1a1a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;">
+  <div style="max-width:600px;margin:0 auto;white-space:pre-wrap;">
+${escapeHtml(params.content)}
+  </div>
+</body>
+</html>
+`;
+
+    const res = await dispatchEmail({
+      to: params.to,
+      subject: params.subject,
+      html,
+    });
+    return { success: true, messageId: res.messageId };
+  } catch (err: any) {
+    console.error("[Mailer] Error sending marketing email:", err);
+    return { success: false, error: err?.message || "Failed to dispatch email" };
+  }
+}
+

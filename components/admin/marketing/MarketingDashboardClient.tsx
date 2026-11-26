@@ -57,6 +57,7 @@ export function MarketingDashboardClient() {
   // Loading states
   const [loading, setLoading] = useState(true);
   const [runningSprint, setRunningSprint] = useState(false);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -160,6 +161,48 @@ export function MarketingDashboardClient() {
     } finally {
       setRunningSprint(false);
     }
+  };
+
+  // Direct Email Sending via SMTP
+  const handleDirectSendEmail = async (outreachId: string) => {
+    setSendingEmailId(outreachId);
+    try {
+      const res = await fetch("/api/admin/marketing/outreach/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: outreachId })
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setBanner({ type: "err", text: json.error || "Failed to deliver email via SMTP." });
+      } else {
+        setBanner({ type: "ok", text: `Cold email delivered successfully to ${json.sent_to} via SMTP!` });
+        await loadData();
+        if (selectedCompany) handleOpenCompanyDrawer(selectedCompany);
+      }
+    } catch (err: any) {
+      setBanner({ type: "err", text: `SMTP send error: ${err?.message || "Unknown error"}` });
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
+
+  // Launch on LinkedIn (Option A: 1-click clipboard + open profile)
+  const handleLaunchLinkedIn = (msg: OutreachRecord) => {
+    copyText(msg.message_content, msg.id);
+    const linkedinUrl = msg.b2b_contacts?.linkedin_url;
+    if (linkedinUrl && linkedinUrl.startsWith("http")) {
+      window.open(linkedinUrl, "_blank");
+    } else {
+      window.open(
+        `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(msg.b2b_contacts?.full_name || "")}`,
+        "_blank"
+      );
+    }
+    setBanner({
+      type: "ok",
+      text: "LinkedIn connection draft copied to clipboard! Profile opened in new tab—paste and connect safely."
+    });
   };
 
   // Outreach Approval
@@ -840,13 +883,28 @@ export function MarketingDashboardClient() {
                     className="p-5 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-3"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="px-2.5 py-0.5 rounded text-[10px] font-mono uppercase bg-[#1F0C12] text-[#D6334A] border border-[#D6334A]/40 font-bold">
                           {msg.channel === "linkedin" ? "LINKEDIN" : "EMAIL"}
                         </span>
-                        <span className="text-xs font-mono text-white font-medium capitalize">
-                          {msg.message_type.replace(/_/g, " ")}
-                        </span>
+
+                        {/* Sequence step indicators */}
+                        {msg.message_type === "cold_email" && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                            ⚡ Step 1: Initial Email
+                          </span>
+                        )}
+                        {msg.message_type === "follow_up" && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold">
+                            ⏳ Step 2: 4-Day Follow-Up (If no reply)
+                          </span>
+                        )}
+                        {msg.message_type === "connection_request" && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold">
+                            💼 Step 1: LinkedIn Connect
+                          </span>
+                        )}
+
                         <span className="text-xs font-mono text-[#8A8175]">
                           To: {msg.b2b_contacts?.full_name || "Decision-Maker"} @ {msg.b2b_companies?.name || "Company"}
                         </span>
@@ -876,33 +934,66 @@ export function MarketingDashboardClient() {
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#2C181B]/50">
-                      <button
-                        type="button"
-                        onClick={() => copyText(msg.message_content, msg.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-[#D6334A]/50 text-xs font-mono text-[#B8AEA3] hover:text-white transition-colors cursor-pointer"
-                      >
-                        {copiedId === msg.id ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Copied to Clipboard!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3.5 h-3.5" />
-                            <span>Copy Full Message</span>
-                          </>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => copyText(msg.message_content, msg.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-[#D6334A]/50 text-xs font-mono text-[#B8AEA3] hover:text-white transition-colors cursor-pointer"
+                        >
+                          {copiedId === msg.id ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy Text</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* LinkedIn Option A: Launch on LinkedIn */}
+                        {msg.channel === "linkedin" && (
+                          <button
+                            type="button"
+                            onClick={() => handleLaunchLinkedIn(msg)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-sky-600/20 cursor-pointer"
+                            title="Copies message and opens LinkedIn profile in a new tab"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Launch on LinkedIn</span>
+                          </button>
                         )}
-                      </button>
+
+                        {/* Email Option A: Send via SMTP */}
+                        {msg.channel === "email" && msg.status !== "sent" && (
+                          <button
+                            type="button"
+                            onClick={() => handleDirectSendEmail(msg.id)}
+                            disabled={sendingEmailId === msg.id}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                            title="Delivers this cold email directly through your configured business SMTP"
+                          >
+                            {sendingEmailId === msg.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5" />
+                            )}
+                            <span>{sendingEmailId === msg.id ? "Sending SMTP..." : "Send via SMTP (1-Click)"}</span>
+                          </button>
+                        )}
+                      </div>
 
                       <div className="flex items-center gap-2">
                         {msg.status === "draft" && (
                           <button
                             type="button"
                             onClick={() => handleApproveOutreach(msg.id)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#D6334A] hover:bg-[#e0324b] text-white text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-[#D6334A]/20"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#D6334A] hover:bg-[#e0324b] text-white text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md shadow-[#D6334A]/20"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Approve Outreach</span>
+                            <span>Approve</span>
                           </button>
                         )}
 
@@ -910,9 +1001,9 @@ export function MarketingDashboardClient() {
                           <button
                             type="button"
                             onClick={() => handleMarkSentOutreach(msg.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-200 hover:text-white border border-emerald-500/40 text-xs font-mono font-medium transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] hover:bg-[#2C181B] text-[#B8AEA3] hover:text-white border border-[#2C181B] text-xs font-mono transition-all cursor-pointer"
                           >
-                            <Send className="w-3.5 h-3.5" />
+                            <Send className="w-3 h-3" />
                             <span>Mark as Sent</span>
                           </button>
                         )}
