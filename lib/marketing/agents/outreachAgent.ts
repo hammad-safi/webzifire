@@ -2,6 +2,7 @@ import { callGeminiStructuredJson } from "@/lib/automation/geminiClient";
 import { DiscoveredCompanyCandidate } from "./companyFinder";
 import { CompanyResearchResult } from "./researchAgent";
 import { B2BContact, B2BOpportunity, B2BOutreach, OutreachChannel, OutreachMessageType } from "@/lib/marketing/types";
+import { matchPortfolioProof, MatchedPortfolioProof } from "../portfolioMatcher";
 
 interface OutreachGenerationResult {
   messages: Array<{
@@ -12,14 +13,30 @@ interface OutreachGenerationResult {
   }>;
 }
 
+export interface OutreachGenerationOptions {
+  meetingBookingUrl?: string;
+  includeMeetingLink?: boolean;
+}
+
 export async function generateProspectOutreach(
   candidate: DiscoveredCompanyCandidate,
   research: CompanyResearchResult,
   contact: B2BContact,
   opportunity?: B2BOpportunity,
-  companyId?: string
+  companyId?: string,
+  options?: OutreachGenerationOptions
 ): Promise<Array<Omit<B2BOutreach, "id" | "created_at" | "updated_at">>> {
   const cId = companyId || contact.company_id;
+
+  // Idea 3: Smart Portfolio Matching (Select optimal live production case study)
+  const matchedProof: MatchedPortfolioProof = matchPortfolioProof(
+    candidate.industry,
+    `${research.description || candidate.discovery_reason} ${research.business_model}`,
+    research.tech_stack
+  );
+
+  const meetingUrl = options?.meetingBookingUrl?.trim() || "";
+  const shouldIncludeMeeting = Boolean(meetingUrl && options?.includeMeetingLink !== false);
 
   const prompt = `You are a world-class B2B Enterprise Business Development & Outreach copywriter for WebziFire.
 
@@ -49,12 +66,27 @@ Type: ${opportunity?.opportunity_type || "Custom Dev Project"}
 Title: ${opportunity?.title || "Full-Stack Development Acceleration"}
 Approach Angle: ${opportunity?.match_rationale || "Direct senior developer support"}
 
+AUTHENTIC SOCIAL PROOF (Idea 3 - Production Case Study Match):
+- Featured Project: ${matchedProof.projectTitle}
+- Category: ${matchedProof.category}
+- Proven Metric: ${matchedProof.metricsSnippet}
+- Recommended Proof Sentence: "${matchedProof.proofSentence}"
+- Instruction: Naturally integrate a 1-sentence reference to this relevant project in the Cold Email and Follow-Up to provide concrete social proof.
+
+MEETING SCHEDULING LINK (Idea 4):
+${
+  shouldIncludeMeeting
+    ? `- Booking URL: ${meetingUrl}
+- Instruction: End the Cold Email and Follow-Up with a frictionless, polite CTA offering them to pick a 10-15 min slot directly at ${meetingUrl} (e.g., "If you're open to a brief chat next week, feel free to pick a time here: ${meetingUrl}, or let me know what day works best for you.").`
+    : `- Instruction: End with a lightweight, low-pressure question (e.g., "Would you be open to a 10-minute chat next week, or should I send a quick code sample/case study?").`
+}
+
 Outreach Principles:
 1. STRICTLY NO SPAM, generic sales templates, buzzword soup, or aggressive pitches.
 2. Be human, polite, concise, and hyper-relevant to what their company actually builds.
 3. Reference concrete details (e.g., their tech stack, a recent product feature, or their engineering growth).
-4. For LinkedIn Connection Request: MUST be under 300 characters. No pitch, just genuine interest in their work or a specific technical observation.
-5. For Cold Email: Engaging, short subject line (3-6 words, no clickbait); personalized opener acknowledging their product; concise statement of how WebziFire can assist (e.g., accelerating their Next.js roadmap or building an internal tool/API); low-pressure CTA (e.g., "Would you be open to a 10-minute chat next week, or should I send a quick code sample/case study?").
+4. For LinkedIn Connection Request: MUST be under 300 characters. No pitch, just genuine interest in their work or a specific technical observation. Do NOT include calendar links in LinkedIn connection notes.
+5. For Cold Email: Engaging, short subject line (3-6 words, no clickbait); personalized opener acknowledging their product; concise statement of how WebziFire can assist (e.g., accelerating their Next.js roadmap or building an internal tool/API); integrate the matched social proof; finish with the polite CTA.
 6. For Follow-Up Email: Scheduled for 4 days later. Gentle, concise bump sharing one additional relevant insight or engineering capability.
 
 Generate 3 personalized message drafts:
@@ -93,14 +125,15 @@ Output STRICT JSON matching schema:
       subject: msg.subject || (msg.channel === "email" ? `Engineering roadmap at ${candidate.name}` : null),
       message_content: msg.message_content.trim(),
       status: "draft" as const,
-      notes: "AI drafted; awaiting founder approval."
+      notes: `AI drafted with matched proof: ${matchedProof.projectTitle} (${matchedProof.metricsSnippet})`
     }));
   } catch (error) {
     console.error(`[OutreachAgent] Error generating outreach for ${contact.full_name} @ ${candidate.name}:`, error);
 
     const firstName = contact.full_name.split(" ")[0] || contact.full_name;
     const linkedinConnect = `Hi ${firstName}, noticed your technical leadership at ${candidate.name}. Impressive work with your platform. Would love to connect and follow your updates!`;
-    const coldEmail = `Hi ${firstName},\n\nI came across ${candidate.name} while following engineering teams in ${candidate.industry}. Really impressed by what you're building.\n\nI lead engineering at WebziFire, where we help teams accelerate their web apps, SaaS features, and API integrations with Next.js, React, Node.js, and TypeScript.\n\nAre you looking to augment your development team or accelerate any upcoming product initiatives?\n\nBest regards,\nWebziFire Engineering Team`;
+    const meetingSnippet = shouldIncludeMeeting ? `\n\nIf you're open to a brief chat next week, feel free to pick a time here: ${meetingUrl}` : "";
+    const coldEmail = `Hi ${firstName},\n\nI came across ${candidate.name} while following engineering teams in ${candidate.industry}. Really impressed by what you're building.\n\nI lead engineering at WebziFire, where we help teams accelerate their web apps, SaaS features, and API integrations with Next.js, React, Node.js, and TypeScript.\n\n${matchedProof.proofSentence}\n\nAre you looking to augment your development team or accelerate any upcoming product initiatives?${meetingSnippet}\n\nBest regards,\nWebziFire Engineering Team`;
 
     return [
       {
@@ -111,7 +144,7 @@ Output STRICT JSON matching schema:
         subject: null,
         message_content: linkedinConnect,
         status: "draft" as const,
-        notes: "Fallback connection draft"
+        notes: `Fallback draft with matched proof: ${matchedProof.projectTitle}`
       },
       {
         company_id: cId,
@@ -121,7 +154,7 @@ Output STRICT JSON matching schema:
         subject: `Engineering support for ${candidate.name}`,
         message_content: coldEmail,
         status: "draft" as const,
-        notes: "Fallback cold email draft"
+        notes: `Fallback cold email with matched proof: ${matchedProof.projectTitle}`
       }
     ];
   }

@@ -11,12 +11,18 @@ import {
   Bell,
   CheckCircle2,
   ExternalLink,
-  ChevronRight,
   Loader2,
   Calendar,
-  AlertCircle
+  Sparkles
 } from "lucide-react";
 import { OutreachRecord } from "@/lib/marketing/types";
+
+export interface MatchedProofInfo {
+  title: string;
+  category: string;
+  metrics: string;
+  slug: string;
+}
 
 export interface ProspectSequenceGroup {
   key: string;
@@ -30,6 +36,8 @@ export interface ProspectSequenceGroup {
   leadPriority?: string;
   companyId: string;
   contactId?: string;
+  industry?: string;
+  matchedProof?: MatchedProofInfo;
   linkedinMessage?: OutreachRecord;
   initialEmail?: OutreachRecord;
   followUpEmail?: OutreachRecord;
@@ -42,6 +50,7 @@ interface ProspectSequenceCardProps {
   sequence: ProspectSequenceGroup;
   copiedId: string | null;
   sendingEmailId: string | null;
+  meetingUrl?: string;
   onCopyText: (text: string, id: string) => void;
   onLaunchLinkedIn: (msg: OutreachRecord) => void;
   onDirectSendEmail: (outreachId: string) => Promise<void>;
@@ -54,6 +63,7 @@ export function ProspectSequenceCard({
   sequence,
   copiedId,
   sendingEmailId,
+  meetingUrl,
   onCopyText,
   onLaunchLinkedIn,
   onDirectSendEmail,
@@ -81,24 +91,27 @@ export function ProspectSequenceCard({
           : "bg-[#120709] border-[#2C181B] hover:border-[#D6334A]/40"
       }`}
     >
-      {/* Card Header: Person & Company */}
-      <div className="p-4 sm:p-5 border-b border-[#2C181B] bg-[#140A0D]/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Prospect Header Summary */}
+      <div className="p-4 sm:p-5 border-b border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-3 bg-[#15080B]/80">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-base font-bold text-white font-sans">
-              {sequence.contactName}
+            <h4 className="text-sm font-mono font-bold text-white flex items-center gap-2">
+              <span>{sequence.contactName}</span>
+              {sequence.contactTitle && (
+                <span className="text-xs font-normal text-[#B8AEA3]">
+                  ({sequence.contactTitle})
+                </span>
+              )}
             </h4>
-            <span className="text-xs font-mono text-[#8A8175]">
-              {sequence.contactTitle ? `${sequence.contactTitle} @ ` : "@ "}
-              <strong className="text-[#FAF7F2]">{sequence.companyName}</strong>
+            <span className="text-xs font-mono text-[#D6334A] font-semibold">
+              @ {sequence.companyName}
             </span>
-            <span className="text-[11px] font-mono text-zinc-500">({sequence.companyDomain})</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-[#8A8175]">
             {sequence.contactEmail && (
-              <span className="inline-flex items-center gap-1 text-[#B8AEA3]">
-                <Mail className="w-3 h-3 text-[#D6334A]" />
+              <span className="flex items-center gap-1 text-[#FAF7F2]">
+                <Mail className="w-3 h-3 text-zinc-400" />
                 {sequence.contactEmail}
               </span>
             )}
@@ -106,26 +119,31 @@ export function ProspectSequenceCard({
               <a
                 href={sequence.linkedinUrl}
                 target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors"
               >
                 <Linkedin className="w-3 h-3" />
                 <span>LinkedIn Profile</span>
                 <ExternalLink className="w-2.5 h-2.5" />
               </a>
             )}
+            {sequence.companyDomain && (
+              <span className="text-[#635B50]">
+                domain: {sequence.companyDomain}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Priority & Sequence Status Pill */}
-        <div className="flex items-center gap-2 self-start sm:self-center">
+        {/* Status Indicators & Lead Score */}
+        <div className="flex flex-wrap items-center gap-2">
           {sequence.hasFollowUpDue ? (
-            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
               <Bell className="w-3.5 h-3.5" />
-              Follow-Up Alarm (Due Now)
+              <span>Follow-Up Due (4+ Days)</span>
             </span>
-          ) : sequence.sequenceStatus === "waiting_followup" ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono bg-sky-500/10 text-sky-300 border border-sky-500/30">
+          ) : sequence.sequenceStatus === "waiting_followup" && sequence.daysUntilFollowUp ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#1C0D11] text-amber-400/90 border border-amber-500/20">
               <Clock className="w-3 h-3" />
               Follow-up in {sequence.daysUntilFollowUp} days
             </span>
@@ -220,7 +238,7 @@ export function ProspectSequenceCard({
               className={`px-1.5 py-0.2 rounded text-[9px] uppercase ${
                 sequence.linkedinMessage.status === "sent"
                   ? "bg-emerald-500/20 text-emerald-300"
-                  : "bg-zinc-800 text-zinc-400"
+                  : "bg-sky-500/20 text-sky-300"
               }`}
             >
               {sequence.linkedinMessage.status}
@@ -229,26 +247,46 @@ export function ProspectSequenceCard({
         )}
       </div>
 
-      {/* Message Content & Preview */}
+      {/* Step Content Card */}
       <div className="p-4 sm:p-5 space-y-3.5">
+        {/* Idea 3: Smart Matched Portfolio Proof Badge */}
+        {sequence.matchedProof && (
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-[#14080B] border border-[#2C181B] text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-[#D6334A]/20 text-[#D6334A] border border-[#D6334A]/30 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                <span>Matched Proof</span>
+              </span>
+              <span className="text-[#FAF7F2] font-semibold">
+                {sequence.matchedProof.title}
+              </span>
+              <span className="text-[#8A8175] text-[11px] hidden md:inline">
+                ({sequence.matchedProof.metrics})
+              </span>
+            </div>
+            <a
+              href={`/work/${sequence.matchedProof.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-[#D6334A] hover:underline"
+            >
+              <span>View Case Study</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        )}
+
         {activeMsg ? (
           <>
-            {/* Subject line for emails */}
+            {/* Subject (for email) */}
             {activeMsg.subject && (
-              <div className="p-2.5 rounded-xl bg-[#180A0E] border border-[#2C181B] text-xs font-mono text-white flex items-center justify-between gap-2">
-                <div>
-                  <strong className="text-[#D6334A]">Subject:</strong> {activeMsg.subject}
-                </div>
-                {activeStep === "follow_up" && (
-                  <span className="text-[10px] text-amber-300 font-bold">
-                    [Thread Reply]
-                  </span>
-                )}
+              <div className="text-xs font-mono text-[#FAF7F2] bg-[#180A0E] p-2.5 rounded-xl border border-[#2C181B]">
+                <strong className="text-[#8A8175]">Subject:</strong> {activeMsg.subject}
               </div>
             )}
 
             {/* Message Body */}
-            <div className="p-4 rounded-xl bg-[#160B0F] border border-[#2C181B] text-xs text-[#FAF7F2] whitespace-pre-wrap leading-relaxed font-sans select-text">
+            <div className="p-4 rounded-xl bg-[#180A0E] border border-[#2C181B] text-xs text-[#FAF7F2] whitespace-pre-wrap leading-relaxed font-sans">
               {activeMsg.message_content}
             </div>
 
@@ -260,7 +298,7 @@ export function ProspectSequenceCard({
                 </span>
               ) : activeStep === "follow_up" ? (
                 <span>
-                  💡 <strong>Follow-up Strategy:</strong> {sequence.hasFollowUpDue ? "Over 4 days have passed without a reply. Send this bump now!" : `Scheduled for 4 days after Step 1 is delivered.`}
+                  💡 <strong>Follow-up Strategy:</strong> {sequence.hasFollowUpDue ? "Over 4 days have passed without a reply. Send this bump now!" : "Scheduled for 4 days after Step 1 is delivered."}
                 </span>
               ) : (
                 <span>
@@ -328,6 +366,21 @@ export function ProspectSequenceCard({
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>Launch on LinkedIn</span>
+                  </button>
+                )}
+
+                {/* Idea 4: Quick 1-Click Copy Meeting Link */}
+                {meetingUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onCopyText(meetingUrl, `meeting-${sequence.key}`)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C0D11] border border-[#2C181B] hover:border-amber-500/50 text-xs font-mono text-amber-300 hover:text-white transition-colors cursor-pointer"
+                    title={`Copy Meeting Link: ${meetingUrl}`}
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                    <span>
+                      {copiedId === `meeting-${sequence.key}` ? "Link Copied!" : "Meeting Link"}
+                    </span>
                   </button>
                 )}
               </div>

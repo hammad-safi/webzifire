@@ -48,6 +48,8 @@ export async function runProspectingSprint(
     opportunity_types: ["Remote Job", "Contract Job", "Custom Dev Project", "SaaS Development"],
     min_lead_score: 50,
     max_leads_per_run: 25,
+    meeting_booking_url: "https://cal.com/webzen",
+    include_meeting_link: true,
     is_active: true,
     last_run_at: null,
     created_at: new Date().toISOString(),
@@ -232,7 +234,11 @@ export async function runProspectingSprint(
           research,
           primaryContact,
           primaryOpp,
-          insertedCompany.id
+          insertedCompany.id,
+          {
+            meetingBookingUrl: campaign.meeting_booking_url || "https://cal.com/webzen",
+            includeMeetingLink: campaign.include_meeting_link !== false
+          }
         );
 
         for (const draft of outreachDrafts) {

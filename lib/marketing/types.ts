@@ -58,6 +58,8 @@ export interface B2BCampaign {
   opportunity_types: OpportunityType[];
   min_lead_score: number;
   max_leads_per_run: number;
+  meeting_booking_url?: string;
+  include_meeting_link?: boolean;
   is_active: boolean;
   last_run_at: string | null;
   created_at: string;

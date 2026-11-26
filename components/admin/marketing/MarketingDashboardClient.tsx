@@ -18,12 +18,15 @@ import {
   Bell,
   Clock,
   Layers,
-  Flame
+  Flame,
+  Calendar,
+  Link2
 } from "lucide-react";
 import { AdminNavHeader } from "../AdminNavHeader";
 import { CompanyDrawer } from "./CompanyDrawer";
 import { PipelineKanban } from "./PipelineKanban";
 import { ProspectSequenceCard, ProspectSequenceGroup } from "./ProspectSequenceCard";
+import { matchPortfolioProof, PORTFOLIO_PROJECTS } from "@/lib/marketing/portfolioMatcher";
 import {
   CompanyRecord,
   ContactRecord,
@@ -67,12 +70,15 @@ export function MarketingDashboardClient() {
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Settings form state
+  // Settings form state (Idea 3 & Idea 4 integrated)
   const [campaignConfig, setCampaignConfig] = useState({
     target_countries: "United States, United Kingdom, Canada, Australia, Germany, Netherlands, France",
     target_industries: "SaaS, Software Agency, Technology Startup, Cloud Services",
     target_technologies: "Next.js, React, Node.js, TypeScript, PostgreSQL, MongoDB",
-    min_lead_score: 50
+    min_lead_score: 50,
+    meeting_booking_url: "https://cal.com/webzen",
+    include_meeting_link: true,
+    portfolio_matching_enabled: true
   });
 
   const loadData = useCallback(async () => {
@@ -282,6 +288,13 @@ export function MarketingDashboardClient() {
       const key = msg.contact_id || msg.company_id;
 
       if (!groupsMap.has(key)) {
+        // Idea 3: Smart Portfolio Matching (Real Production Proof)
+        const matched = matchPortfolioProof(
+          (company as any)?.industry || "",
+          (company as any)?.description || "",
+          (company as any)?.tech_stack || []
+        );
+
         groupsMap.set(key, {
           key,
           contactName: contact?.full_name || "Decision-Maker",
@@ -293,6 +306,13 @@ export function MarketingDashboardClient() {
           leadScore: company?.lead_score,
           companyId: msg.company_id,
           contactId: msg.contact_id || undefined,
+          industry: (company as any)?.industry,
+          matchedProof: {
+            title: matched.projectTitle,
+            category: matched.category,
+            metrics: matched.metricsSnippet,
+            slug: matched.caseStudySlug
+          },
           hasFollowUpDue: false,
           sequenceStatus: "ready_initial"
         });
@@ -1060,6 +1080,7 @@ export function MarketingDashboardClient() {
                     sequence={seq}
                     copiedId={copiedId}
                     sendingEmailId={sendingEmailId}
+                    meetingUrl={campaignConfig.include_meeting_link ? campaignConfig.meeting_booking_url : undefined}
                     onCopyText={copyText}
                     onLaunchLinkedIn={handleLaunchLinkedIn}
                     onDirectSendEmail={handleDirectSendEmail}
@@ -1126,6 +1147,106 @@ export function MarketingDashboardClient() {
                   onChange={(e) => setCampaignConfig({ ...campaignConfig, min_lead_score: parseInt(e.target.value, 10) || 50 })}
                   className="w-32 p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
                 />
+              </div>
+
+              {/* IDEA 4: MEETING BOOKING LINK SETTINGS */}
+              <div className="pt-6 border-t border-[#2C181B] space-y-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-sm font-mono font-bold text-white uppercase">
+                    Meeting Booking Link (Cal.com / Calendly)
+                  </h4>
+                </div>
+                <p className="text-xs text-[#8A8175] font-mono">
+                  When enabled, AI automatically attaches your calendar link as a frictionless CTA at the end of Cold Emails &amp; Follow-Ups.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[#B8AEA3] mb-1.5">Your Booking URL:</label>
+                    <input
+                      type="url"
+                      placeholder="https://cal.com/webzen"
+                      value={campaignConfig.meeting_booking_url}
+                      onChange={(e) => setCampaignConfig({ ...campaignConfig, meeting_booking_url: e.target.value })}
+                      className="w-full p-2.5 rounded-xl bg-[#1A0C10] border border-[#2C181B] text-white focus:outline-none focus:border-[#D6334A]"
+                    />
+                  </div>
+                  <div className="flex items-end pb-1">
+                    {campaignConfig.meeting_booking_url && (
+                      <a
+                        href={campaignConfig.meeting_booking_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1C0D11] hover:bg-[#2C181B] text-amber-300 border border-amber-500/30 text-xs font-mono transition-all"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Test Booking Link</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <input
+                    type="checkbox"
+                    id="includeMeetingToggle"
+                    checked={campaignConfig.include_meeting_link}
+                    onChange={(e) => setCampaignConfig({ ...campaignConfig, include_meeting_link: e.target.checked })}
+                    className="w-4 h-4 rounded border-[#2C181B] text-[#D6334A] focus:ring-[#D6334A] bg-[#1A0C10] cursor-pointer"
+                  />
+                  <label htmlFor="includeMeetingToggle" className="text-xs font-mono text-[#FAF7F2] cursor-pointer">
+                    Automatically weave meeting link into Cold Email &amp; Follow-Up calls-to-action
+                  </label>
+                </div>
+              </div>
+
+              {/* IDEA 3: SMART PORTFOLIO PROOF ENGINE SHOWCASE */}
+              <div className="pt-6 border-t border-[#2C181B] space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#D6334A]" />
+                    <h4 className="text-sm font-mono font-bold text-white uppercase">
+                      Smart Portfolio Matching (Active Proof Engine)
+                    </h4>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                    Active
+                  </span>
+                </div>
+                <p className="text-xs text-[#8A8175] font-mono">
+                  The AI analyzes each target company&apos;s industry and automatically quotes real metrics from your production case studies:
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  {PORTFOLIO_PROJECTS.map((proj) => (
+                    <div
+                      key={proj.id}
+                      className="p-3.5 rounded-xl bg-[#180A0E] border border-[#2C181B] space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-bold text-white truncate max-w-[200px]">
+                          {proj.title}
+                        </span>
+                        <a
+                          href={`/work/${proj.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] font-mono text-[#D6334A] hover:underline flex items-center gap-0.5"
+                        >
+                          <span>Proof</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
+                      <div className="text-[11px] font-mono text-[#8A8175]">
+                        {proj.category}
+                      </div>
+                      <div className="text-[11px] font-mono text-emerald-400 bg-[#120709] px-2 py-1 rounded border border-[#2C181B]">
+                        ⚡ {proj.metrics}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="pt-4 border-t border-[#2C181B]">
