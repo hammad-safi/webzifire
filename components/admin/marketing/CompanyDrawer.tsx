@@ -51,6 +51,64 @@ export function CompanyDrawer({
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "contacts" | "opportunities" | "outreach">("overview");
 
+  // Group drawer outreach messages into clean sequence boxes (called unconditionally before any early returns)
+  const sequenceGroups = useMemo(() => {
+    if (!company) return [];
+    const groupsMap = new Map<string, ProspectSequenceGroup>();
+
+    outreach.forEach((msg) => {
+      const contact = contacts.find((c) => c.id === msg.contact_id);
+      const key = msg.contact_id || company.id;
+
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          key,
+          contactName: contact?.full_name || "Decision-Maker",
+          contactTitle: contact?.job_title,
+          contactEmail: contact?.email || company.official_email || undefined,
+          linkedinUrl: contact?.linkedin_url || company.linkedin_url || undefined,
+          companyName: company.name,
+          companyDomain: company.domain,
+          leadScore: company.lead_score,
+          companyId: company.id,
+          contactId: msg.contact_id || undefined,
+          hasFollowUpDue: false,
+          sequenceStatus: "ready_initial"
+        });
+      }
+
+      const grp = groupsMap.get(key)!;
+      if (msg.channel === "linkedin") {
+        grp.linkedinMessage = msg;
+      } else if (msg.message_type === "cold_email") {
+        grp.initialEmail = msg;
+      } else if (msg.message_type === "follow_up") {
+        grp.followUpEmail = msg;
+      }
+    });
+
+    const list = Array.from(groupsMap.values());
+    list.forEach((grp) => {
+      if (grp.initialEmail?.status === "replied" || grp.followUpEmail?.status === "replied") {
+        grp.sequenceStatus = "replied";
+      } else if (grp.initialEmail?.status === "sent" && grp.initialEmail.sent_at) {
+        const sentTime = new Date(grp.initialEmail.sent_at).getTime();
+        const daysElapsed = (Date.now() - sentTime) / (1000 * 60 * 60 * 24);
+        if (daysElapsed >= 4 && grp.followUpEmail?.status !== "sent") {
+          grp.hasFollowUpDue = true;
+          grp.sequenceStatus = "followup_due";
+        } else if (daysElapsed < 4 && grp.followUpEmail?.status !== "sent") {
+          grp.daysUntilFollowUp = Math.ceil(4 - daysElapsed);
+          grp.sequenceStatus = "waiting_followup";
+        } else if (grp.followUpEmail?.status === "sent") {
+          grp.sequenceStatus = "completed";
+        }
+      }
+    });
+
+    return list;
+  }, [outreach, contacts, company]);
+
   if (!isOpen || !company) return null;
 
   const copyText = (text: string, id: string) => {
@@ -113,62 +171,6 @@ export function CompanyDrawer({
   const rationale = company.score_rationale as any;
   const currentStage: string = company.pipeline_stage || (company as any).lead_status || "qualified";
 
-  // Group drawer outreach messages into clean sequence boxes
-  const sequenceGroups = useMemo(() => {
-    const groupsMap = new Map<string, ProspectSequenceGroup>();
-
-    outreach.forEach((msg) => {
-      const contact = contacts.find((c) => c.id === msg.contact_id);
-      const key = msg.contact_id || company.id;
-
-      if (!groupsMap.has(key)) {
-        groupsMap.set(key, {
-          key,
-          contactName: contact?.full_name || "Decision-Maker",
-          contactTitle: contact?.job_title,
-          contactEmail: contact?.email || company.official_email || undefined,
-          linkedinUrl: contact?.linkedin_url || company.linkedin_url || undefined,
-          companyName: company.name,
-          companyDomain: company.domain,
-          leadScore: company.lead_score,
-          companyId: company.id,
-          contactId: msg.contact_id || undefined,
-          hasFollowUpDue: false,
-          sequenceStatus: "ready_initial"
-        });
-      }
-
-      const grp = groupsMap.get(key)!;
-      if (msg.channel === "linkedin") {
-        grp.linkedinMessage = msg;
-      } else if (msg.message_type === "cold_email") {
-        grp.initialEmail = msg;
-      } else if (msg.message_type === "follow_up") {
-        grp.followUpEmail = msg;
-      }
-    });
-
-    const list = Array.from(groupsMap.values());
-    list.forEach((grp) => {
-      if (grp.initialEmail?.status === "replied" || grp.followUpEmail?.status === "replied") {
-        grp.sequenceStatus = "replied";
-      } else if (grp.initialEmail?.status === "sent" && grp.initialEmail.sent_at) {
-        const sentTime = new Date(grp.initialEmail.sent_at).getTime();
-        const daysElapsed = (Date.now() - sentTime) / (1000 * 60 * 60 * 24);
-        if (daysElapsed >= 4 && grp.followUpEmail?.status !== "sent") {
-          grp.hasFollowUpDue = true;
-          grp.sequenceStatus = "followup_due";
-        } else if (daysElapsed < 4 && grp.followUpEmail?.status !== "sent") {
-          grp.daysUntilFollowUp = Math.ceil(4 - daysElapsed);
-          grp.sequenceStatus = "waiting_followup";
-        } else if (grp.followUpEmail?.status === "sent") {
-          grp.sequenceStatus = "completed";
-        }
-      }
-    });
-
-    return list;
-  }, [outreach, contacts, company]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
