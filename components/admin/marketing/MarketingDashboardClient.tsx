@@ -572,24 +572,22 @@ export function MarketingDashboardClient() {
   }, [filteredSequences, sequencesLimit]);
 
   return (
-    <div className="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col bg-[#070405] text-[#FAF7F2] pt-20 pb-4 px-4 sm:px-8 lg:px-12 font-sans">
-      <div className="max-w-[1440px] mx-auto w-full flex-1 flex flex-col min-h-0 space-y-3">
+    <div className="min-h-screen bg-[#070405] text-[#FAF7F2] pt-24 pb-20 px-4 sm:px-8 lg:px-12 font-sans">
+      <div className="max-w-[1440px] mx-auto space-y-6">
         {/* Navigation Switcher */}
-        <div className="shrink-0">
-          <AdminNavHeader currentModule="marketing" />
-        </div>
+        <AdminNavHeader currentModule="marketing" />
 
         {/* Header Action Bar */}
-        <div className="shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-[#2C181B]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#2C181B]">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#180A0E] border border-[#2C181B] font-mono text-[11px] uppercase tracking-wider text-[#D6334A] mb-1.5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#180A0E] border border-[#2C181B] font-mono text-[11px] uppercase tracking-wider text-[#D6334A] mb-2">
               <Target className="w-3.5 h-3.5" />
               <span>WebziFire Autonomous Prospecting &amp; Lead Intelligence</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-light font-display text-[#FAF7F2]">
+            <h1 className="text-3xl sm:text-4xl font-light font-display text-[#FAF7F2]">
               B2B Marketing &amp; Client Acquisition Engine
             </h1>
-            <p className="text-xs font-mono text-[#8A8175] mt-0.5">
+            <p className="text-xs font-mono text-[#8A8175] mt-1">
               Targeting: US, UK, Canada, Australia, Europe • Tech Stack: Next.js, React, Node.js, TypeScript, PostgreSQL, Custom SaaS &amp; ERP
             </p>
           </div>
@@ -624,7 +622,7 @@ export function MarketingDashboardClient() {
         {/* Banner */}
         {banner && (
           <div
-            className={`shrink-0 p-3 rounded-xl border text-xs font-mono flex items-center justify-between gap-4 ${
+            className={`p-4 rounded-xl border text-xs font-mono flex items-center justify-between gap-4 ${
               banner.type === "ok"
                 ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-200"
                 : "bg-rose-950/40 border-rose-500/40 text-rose-200"
@@ -642,7 +640,7 @@ export function MarketingDashboardClient() {
         )}
 
         {/* Tab Controls (Mobile Horizontal Swipe + Desktop Wrap) */}
-        <div className="shrink-0 flex items-center gap-2 border-b border-[#2C181B] pb-2 text-xs font-mono overflow-x-auto no-scrollbar scroll-smooth flex-nowrap sm:flex-wrap">
+        <div className="flex items-center gap-2 border-b border-[#2C181B] pb-3 text-xs font-mono overflow-x-auto no-scrollbar scroll-smooth flex-nowrap sm:flex-wrap">
           {[
             { id: "overview", label: "📈 Overview & Telemetry" },
             { id: "companies", label: `🏢 Companies (${companies.length})` },
@@ -675,7 +673,7 @@ export function MarketingDashboardClient() {
 
         {/* TAB 1: OVERVIEW & TELEMETRY */}
         {activeTab === "overview" && (
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6 pr-1 pb-6">
+          <div className="space-y-6">
             {/* KPI Cards Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
               <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-1">
@@ -850,9 +848,9 @@ export function MarketingDashboardClient() {
 
         {/* TAB 2: COMPANIES DIRECTORY */}
         {activeTab === "companies" && (
-          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
+          <div className="space-y-4">
             {/* Search & Filter Bar */}
-            <div className="shrink-0 p-3 sm:p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-96">
                 <Search className="w-4 h-4 text-[#8A8175] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -894,8 +892,8 @@ export function MarketingDashboardClient() {
               </div>
             </div>
 
-            {/* Companies Table (Fixed with sticky header and internal scroll only) */}
-            <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner relative">
+            {/* Companies Table (Scrollable with sticky header) */}
+            <div className="overflow-auto max-h-[600px] rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner relative">
               <table className="w-full text-left text-xs font-mono min-w-[780px] border-collapse">
                 <thead className="sticky top-0 z-20 bg-[#16080B] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px] shadow-sm">
                   <tr>
@@ -1017,8 +1015,8 @@ export function MarketingDashboardClient() {
 
         {/* TAB 3: DECISION-MAKERS */}
         {activeTab === "contacts" && (
-          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
-            <div className="flex-1 min-h-0 overflow-auto rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner relative">
+          <div className="space-y-4">
+            <div className="overflow-auto max-h-[600px] rounded-2xl border border-[#2C181B] bg-[#120709] custom-scrollbar shadow-inner relative">
               <table className="w-full text-left text-xs font-mono min-w-[760px] border-collapse">
                 <thead className="sticky top-0 z-20 bg-[#16080B] border-b border-[#2C181B] text-[#8A8175] uppercase text-[10px] shadow-sm">
                   <tr>
@@ -1114,89 +1112,85 @@ export function MarketingDashboardClient() {
 
         {/* TAB 4: OPPORTUNITIES & JOBS */}
         {activeTab === "opportunities" && (
-          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {opportunities.length === 0 ? (
-                  <div className="col-span-3 p-8 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B]">
-                    No opportunities detected yet. Run an AI Prospecting Sprint to identify engineering jobs and client development contracts.
-                  </div>
-                ) : (
-                  paginatedOpportunities.map((opp: OpportunityRecord) => (
-                    <div
-                      key={opp.id}
-                      className="p-5 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-3 flex flex-col justify-between"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            {opp.opportunity_type}
-                          </span>
-                          <span className="text-xs font-mono font-bold text-[#D6334A]">
-                            {opp.match_score}% Match
-                          </span>
-                        </div>
-
-                        <h4 className="text-base font-medium text-white">{opp.title}</h4>
-                        <p className="text-xs font-mono text-[#8A8175]">
-                          Target: {opp.b2b_companies?.name || "Company"}
-                        </p>
-
-                        <p className="text-xs text-[#D6CEC5] leading-relaxed line-clamp-3">
-                          {opp.description}
-                        </p>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {opportunities.length === 0 ? (
+                <div className="col-span-3 p-8 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B]">
+                  No opportunities detected yet. Run an AI Prospecting Sprint to identify engineering jobs and client development contracts.
+                </div>
+              ) : (
+                paginatedOpportunities.map((opp: OpportunityRecord) => (
+                  <div
+                    key={opp.id}
+                    className="p-5 rounded-2xl bg-[#120709] border border-[#2C181B] space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {opp.opportunity_type}
+                        </span>
+                        <span className="text-xs font-mono font-bold text-[#D6334A]">
+                          {opp.match_score}% Match
+                        </span>
                       </div>
 
-                      <div className="space-y-2 pt-2 border-t border-[#2C181B]/50">
-                        {opp.match_rationale && (
-                          <p className="text-[11px] text-[#B8AEA3] italic">
-                            💡 Pitch Angle: {opp.match_rationale}
-                          </p>
-                        )}
+                      <h4 className="text-base font-medium text-white">{opp.title}</h4>
+                      <p className="text-xs font-mono text-[#8A8175]">
+                        Target: {opp.b2b_companies?.name || "Company"}
+                      </p>
 
-                        <div className="flex flex-wrap gap-1">
-                          {(opp.required_skills || []).map((sk: string, i: number) => (
-                            <span
-                              key={i}
-                              className="px-2 py-0.5 rounded text-[9px] font-mono bg-[#1A0C10] text-[#B8AEA3] border border-[#2C181B]"
-                            >
-                              {sk}
-                            </span>
-                          ))}
-                        </div>
+                      <p className="text-xs text-[#D6CEC5] leading-relaxed line-clamp-3">
+                        {opp.description}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-[#2C181B]/50">
+                      {opp.match_rationale && (
+                        <p className="text-[11px] text-[#B8AEA3] italic">
+                          💡 Pitch Angle: {opp.match_rationale}
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap gap-1">
+                        {(opp.required_skills || []).map((sk: string, i: number) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 rounded text-[9px] font-mono bg-[#1A0C10] text-[#B8AEA3] border border-[#2C181B]"
+                          >
+                            {sk}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-
-              {/* Infinite Scroll Sentinel for Opportunities */}
-              <InfiniteScrollSentinel
-                hasMore={paginatedOpportunities.length < opportunities.length}
-                current={paginatedOpportunities.length}
-                total={opportunities.length}
-                onLoadMore={() => setOpportunitiesLimit((prev) => prev + 12)}
-              />
+                  </div>
+                ))
+              )}
             </div>
+
+            {/* Infinite Scroll Sentinel for Opportunities */}
+            <InfiniteScrollSentinel
+              hasMore={paginatedOpportunities.length < opportunities.length}
+              current={paginatedOpportunities.length}
+              total={opportunities.length}
+              onLoadMore={() => setOpportunitiesLimit((prev) => prev + 12)}
+            />
           </div>
         )}
 
         {/* TAB 5: PIPELINE KANBAN */}
         {activeTab === "kanban" && (
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-            <PipelineKanban
-              companies={companies}
-              onSelectCompany={handleOpenCompanyDrawer}
-              onUpdateStatus={handleUpdateCompanyStatus}
-            />
-          </div>
+          <PipelineKanban
+            companies={companies}
+            onSelectCompany={handleOpenCompanyDrawer}
+            onUpdateStatus={handleUpdateCompanyStatus}
+          />
         )}
 
         {/* TAB 6: OUTREACH DESK */}
         {activeTab === "outreach" && (
-          <div className="flex-1 min-h-0 flex flex-col space-y-3 pb-2">
+          <div className="space-y-4">
             {/* Outreach Desk Header & Filter Bar */}
-            <div className="shrink-0 p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="p-4 rounded-2xl bg-[#120709] border border-[#2C181B] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-sm font-mono font-bold text-white uppercase flex items-center gap-2">
                   <span>Prospect Outreach Sequences &amp; 4-Day Alarms</span>
@@ -1274,7 +1268,7 @@ export function MarketingDashboardClient() {
             </div>
 
             {/* Grouped Prospect Sequences List */}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 pr-1 pb-4">
+            <div className="space-y-4">
               {filteredSequences.length === 0 ? (
                 <div className="p-10 text-center text-xs font-mono text-[#8A8175] bg-[#120709] rounded-2xl border border-[#2C181B] space-y-2">
                   <p>No prospect sequences match this filter.</p>
@@ -1314,8 +1308,7 @@ export function MarketingDashboardClient() {
 
         {/* TAB 7: CAMPAIGN CONFIGURATION */}
         {activeTab === "settings" && (
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 pb-6">
-            <div className="p-6 rounded-2xl bg-[#120709] border border-[#2C181B] max-w-3xl space-y-6">
+          <div className="p-6 rounded-2xl bg-[#120709] border border-[#2C181B] max-w-3xl space-y-6">
               <div>
                 <h3 className="text-base font-mono uppercase font-bold text-white">
                   Campaign Targeting &amp; Lead Qualification Settings
@@ -1427,7 +1420,6 @@ export function MarketingDashboardClient() {
                 </button>
               </div>
             </div>
-          </div>
         )}
 
         {/* Company Intelligence Slide-Over Drawer */}
