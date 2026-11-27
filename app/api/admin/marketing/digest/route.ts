@@ -126,7 +126,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const recipientEmail = body.to_email || process.env.SMTP_USER || "support@webzen.cloud";
+    const recipientEmail = body.to_email || process.env.ADMIN_APPROVAL_EMAIL || process.env.SMTP_USER || "inquiry@webzifire.com";
 
     const digest = await computeDigest();
 
@@ -176,7 +176,7 @@ ${followUpsText}
 • ${digest.pendingDraftsCount} personalized outreach message drafts are waiting for your 1-click review.
 
 Open your Admin Portal to approve and send with 1 click:
-https://portal.webzen.cloud/admin/marketing
+https://webzifire.com/admin/marketing
 
 Have a high-growth day!
 — WebziFire Autonomous BD Engine`;
