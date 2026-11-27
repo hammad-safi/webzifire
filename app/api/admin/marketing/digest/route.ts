@@ -126,7 +126,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const recipientEmail = body.to_email || process.env.ADMIN_APPROVAL_EMAIL || process.env.SMTP_USER || "inquiry@webzifire.com";
+    const recipientEmail = body.to_email || process.env.ADMIN_APPROVAL_EMAIL || process.env.SMTP_USER || "inquire@webzifire.com";
 
     const digest = await computeDigest();
 
