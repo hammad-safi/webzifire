@@ -189,12 +189,15 @@ async function dispatchEmail(params: {
   to: string;
   subject: string;
   html: string;
+  fromName?: string;
+  fromEmail?: string;
 }): Promise<{ messageId: string; to: string }> {
-  const fromName = process.env.SMTP_FROM_NAME || "WebziFire Autonomous SEO";
+  const fromName = params.fromName || process.env.SMTP_FROM_NAME || "WebziFire";
+  const fromEmail = params.fromEmail || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
 
   // Optional Resend HTTPS transport if RESEND_API_KEY is configured
   if (process.env.RESEND_API_KEY && !process.env.SMTP_PASS) {
-    const fromEmail = process.env.SMTP_USER || "onboarding@resend.dev";
+    const resendFrom = fromEmail || "onboarding@resend.dev";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -202,7 +205,7 @@ async function dispatchEmail(params: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: `${fromName} <${fromEmail}>`,
+        from: `${fromName} <${resendFrom}>`,
         to: [params.to],
         subject: params.subject,
         html: params.html,
@@ -223,7 +226,7 @@ async function dispatchEmail(params: {
 
   const res = await sendMailViaSmtp({
     fromName,
-    fromEmail: process.env.SMTP_USER,
+    fromEmail: fromEmail || process.env.SMTP_USER,
     to: params.to,
     subject: params.subject,
     html: params.html,
@@ -822,6 +825,8 @@ export async function sendDirectMarketingEmail(params: {
   to: string;
   subject: string;
   content: string;
+  fromName?: string;
+  fromEmail?: string;
 }): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     const html = `
@@ -843,6 +848,8 @@ ${escapeHtml(params.content)}
       to: params.to,
       subject: params.subject,
       html,
+      fromName: params.fromName || process.env.MARKETING_FROM_NAME || "WebziFire",
+      fromEmail: params.fromEmail || process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER,
     });
     return { success: true, messageId: res.messageId };
   } catch (err: any) {
